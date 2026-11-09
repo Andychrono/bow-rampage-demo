@@ -1313,7 +1313,7 @@ function updateHUD(cfg) {
   if (resName) {
     const charge = chargeElapsed === null ? null : chargedShotTier(chargeElapsed,cfg);
     resName.textContent = chargeElapsed !== null
-      ? (charge ? 'CARGA PRONTA · ' + charge.cost : 'CARREGANDO · ' + chargeElapsed.toFixed(1) + 's')
+      ? (charge?.full ? 'CARGA COMPLETA · 100%' : chargeElapsed >= 4 ? 'RESERVA INSUFICIENTE · RECARREGUE' : (charge ? 'MEIA CARGA · 50% · ' : 'CARREGANDO · ') + chargeElapsed.toFixed(1) + '/4s')
       : reserveRecovering ? messages[0] : cfg.resourceName;
   }
   status.hidden = !waiting && !releaseToAttack && !needsReload;
@@ -1436,8 +1436,8 @@ canvas.addEventListener('contextmenu',event=>event.preventDefault());
 function chargedShotTier(seconds,cfg = activeCfg) {
   const full = reserveCapacity(cfg);
   const half = ['seeds','quiver'].includes(cfg.resourceType) ? Math.ceil(full/2) : full/2;
-  if (seconds + 1e-9 >= 4 && currentResource >= full) return {cost:full,scale:1.55};
-  if (seconds + 1e-9 >= 2 && currentResource >= half) return {cost:half,scale:1.28};
+  if (seconds + 1e-9 >= 4 && currentResource + 1e-7 >= full) return {cost:full,scale:1.55,full:true};
+  if (seconds + 1e-9 >= 2 && currentResource + 1e-7 >= half) return {cost:half,scale:1.28,full:false};
   return null;
 }
 function cancelChargedShot(){chargeElapsed=null;}
@@ -2623,7 +2623,7 @@ function update(dt, realDt = dt) {
   }
 
   // 3. Atualizar Regeneração de Recursos (Stamina / Mana / Sementes / Aljava)
-  if(chargeElapsed!==null)chargeElapsed=Math.min(4,chargeElapsed+dt);
+  if(chargeElapsed!==null)chargeElapsed=Math.min(4,chargeElapsed+realDt);
   const capacity = reserveCapacity(cfg);
   const regenDelay = resourceRecoveryDelay(cfg);
   if (currentResource >= capacity) reserveRecovering = false;
