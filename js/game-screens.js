@@ -26,7 +26,7 @@ window.GameScreens=(()=>{
   if(!gameReady||isGameOver||isPaused||audioSettingsOpen)return;
   settings(false,false);
   previousFocus=document.activeElement;spellAim?.cancel();cancelChargedShot();isPaused=true;isMouseDown=false;BowAudio.stopEffects();
-  document.getElementById('pause-spells').hidden = bossPhaseActive || !activeSpellCatalog.some(spell => learnedSpell(spell.id));
+  document.getElementById('pause-spells').hidden = false;
   const data=snapshot();
   const cards = modifiers.selected();
   const summary = document.getElementById('modifier-summary');

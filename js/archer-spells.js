@@ -9,10 +9,10 @@
  ];
  for(const spell of CATALOG)spell.name=root.BowI18n?.t('spell.'+spell.id+'.name',spell.name)??spell.name;
  function create(emit,random=Math.random,talents={}){
-  let cooldowns={},guard=null,rain=null,devCooldown=null,followUp=null;
+  let cooldowns={},guard=null,rain=null,devCooldown=null,followUp=null,guardianEffects=[];
   const cooldown=spell=>devCooldown??talents[spell.id]?.cooldown??spell.cooldown;
   const rainDuration=talents.rain?.duration??5;
-  function reset(){cooldowns=Object.fromEntries(CATALOG.map(s=>[s.id,0]));guard=null;rain=null;followUp=null;}
+  function reset(){cooldowns=Object.fromEntries(CATALOG.map(s=>[s.id,0]));guard=null;rain=null;followUp=null;guardianEffects=[];}
   function shot(id,x,y,angle,speed,extra={}){
    const spell=CATALOG.find(s=>s.id===id);
    emit({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,angle,voc:'Archer',life:1.8,trail:[],spellId:id,spellPower:spell.power,pierceLeft:0,...extra});
@@ -30,18 +30,19 @@
     if(talents[id]?.extra)followUp={remaining:.14,fire:()=>shot(id,px,py,angle,780,{pierceLeft:2,spellPower:spell.power*.6})};
    }
    if(id==='rain')rain={elapsed:0,next:new WeakMap(),ambientNext:0,ambientWave:0,drops:[]};
-   if(id==='guardians')guard={elapsed:0,angle,radius:70,arrows:Array.from({length:talents.guardians?.count??4},(_,index)=>({index,spent:false}))};
+   if(id==='guardians')guard={x,y,elapsed:0,angle,radius:70,arrows:Array.from({length:talents.guardians?.count??4},(_,index)=>({index,spent:false}))};
 
    root.BowAudio?.spell(id);
    return true;
   }
   function update(dt,{x,y,width=x*2,height=y*2,active=true,monsters=[]}){
    if(!active||!Number.isFinite(dt)||dt<=0)return;
+   for(const effect of guardianEffects)effect.age+=dt;guardianEffects=guardianEffects.filter(effect=>effect.age<effect.duration);
    if(followUp&&(followUp.remaining-=dt)<=0){followUp.fire();followUp=null;}
    for(const spell of CATALOG)cooldowns[spell.id]=Math.max(0,cooldowns[spell.id]-dt);
    if(guard){
     const previousAngle=guard.angle,previousRadius=guard.radius;
-    guard.elapsed+=dt;guard.angle+=dt*2.2;
+    guard.x=x;guard.y=y;guard.elapsed+=dt;guard.angle+=dt*2.2;
     guard.radius=70+60*Math.min(1,guard.elapsed/.3);
     for(const arrow of guard.arrows){
       if(arrow.spent)continue;
@@ -78,6 +79,7 @@
   }
   function consumeGuardian(arrow){
    if(!guard||!guard.arrows.includes(arrow)||arrow.spent)return false;
+   if(root.ArcherGuardVisual){const p=root.ArcherGuardVisual.pose(guard,arrow.index);guardianEffects.push({x:p.x,y:p.y,angle:p.angle,front:p.front,size:p.size,age:0,duration:.32});}
    arrow.spent=true;
    if(guard.arrows.every(a=>a.spent)){
     guard=null;cooldowns.guardians=cooldown(CATALOG.find(s=>s.id==='guardians'));
@@ -86,7 +88,7 @@
   }
   function setDevCooldown(value){if(root.GameMode?.dev!==true)return false;devCooldown=value===1?1:null;if(devCooldown!==null)for(const key of Object.keys(cooldowns))cooldowns[key]=Math.min(cooldowns[key],1);return true;}
   reset();
-  return {setDevCooldown,cast,update,reset,consumeGuardian,get cooldowns(){return {...cooldowns}},get guard(){return guard&&{...guard,arrows:guard.arrows.map(a=>({...a}))}},get rain(){return rain&&{...rain}}};
+  return {setDevCooldown,cast,update,reset,consumeGuardian,get cooldowns(){return {...cooldowns}},get guard(){return guard&&{...guard,arrows:guard.arrows.map(a=>({...a}))}},get guardianEffects(){return guardianEffects.map(e=>({...e}))},get rain(){return rain&&{...rain}}};
  }
  function rainPosition(drop,height){const progress=Math.max(0,Math.min(1,drop.age/.43)),travel=Math.min(360,height*.42);return {x:drop.x,y:drop.y-travel*(1-Math.pow(progress,1.6)),landed:progress>=1};}
  const api={CATALOG,create,rainPosition};root.ArcherSpells=api;

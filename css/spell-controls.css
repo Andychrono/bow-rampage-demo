@@ -17,3 +17,17 @@
 #spell-position-preview .spell-button{display:block;pointer-events:none;box-shadow:0 0 0 1px #d3ad58}
 @media(max-width:650px){#spell-position-preview{top:66px;left:10px;gap:7px}#spell-settings-panel{padding:16px}}
 #spell-key-options>div[hidden],#spell-position-preview .spell-button[hidden]{display:none}
+
+/* Aumenta os ícones sem ultrapassar a largura disponível da tela. */
+#spell-bar .spell-button,#spell-position-preview .spell-button,#spell-size-preview .spell-button{box-sizing:border-box;flex-shrink:0;width:min(calc(46px * var(--spell-scale,1)),calc((100vw - 50px)/4));height:min(calc(46px * var(--spell-scale,1)),calc((100vw - 50px)/4))}
+#spell-bar .spell-button kbd,#spell-position-preview .spell-button kbd{font-size:calc(9px * var(--spell-scale,1))}
+#spell-bar .spell-button .spell-cooldown{font-size:calc(16px * var(--spell-scale,1))}
+#spell-bar .spell-button.pending .spell-cooldown{font-size:calc(7px * var(--spell-scale,1))}
+#spell-bar .spell-button.spell-active .spell-cooldown{font-size:calc(10px * var(--spell-scale,1))}
+.spell-size-setting{margin:18px 0;padding-top:14px;border-top:1px solid #554524}
+.spell-size-setting label{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#e4d7b3;gap:12px}
+#spell-size{width:100%;margin:14px 0;accent-color:#d3ad58;cursor:pointer}
+#spell-size-preview{display:flex;justify-content:center;gap:7px;margin-top:6px}
+#spell-size-preview[hidden]{display:none}
+#spell-size-preview .spell-button{cursor:default}
+@media(max-width:650px){#spell-bar .spell-button,#spell-position-preview .spell-button,#spell-size-preview .spell-button{width:min(calc(40px * var(--spell-scale,1)),calc((100vw - 50px)/4));height:min(calc(40px * var(--spell-scale,1)),calc((100vw - 50px)/4))}}

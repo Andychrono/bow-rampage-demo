@@ -160,7 +160,7 @@
     if(!pool.length){times[id]=0;return false;}
     for(let i=0;i<(talents[id]?.count??4)&&pool.length;i++){
      pool.sort((a,b)=>Math.hypot(a.x-px,a.y-py)-Math.hypot(b.x-px,b.y-py));const m=pool.shift();if(i&&Math.hypot(m.x-origin.x,m.y-origin.y)>260)break;
-     pulse(id,m.x,m.y,12,{onlyTarget:m,hitsAir:true,spellPower:s.power*Math.pow(.85,i)});visual(id,m.x,m.y,.65,90,{fromX:origin.x,fromY:origin.y});origin=m;px=m.x;py=m.y;
+     pulse(id,m.x,m.y,12,{onlyTarget:m,hitsAir:true,spellPower:s.power*Math.pow(.85,i)});visual(id,m.x,m.y,.65,90,{fromX:origin.x,fromY:origin.y,linkIndex:i,linkSource:i?origin:null,linkTarget:m});origin=m;px=m.x;py=m.y;
     }
    }
    if(id==='dark_vortex'){const radius=talents[id]?.radius??TARGETED[id].radius;visual(id,tx,ty,talents[id]?.duration??6,290*radius/TARGETED[id].radius,{field:true,radius});}
@@ -199,6 +199,7 @@
     if(storm.elapsed>=stormDuration)storm=null;
    }
    for(const e of effects){
+    if(e.id==='electric_link'){e.fromX=e.linkSource?.x??x;e.fromY=e.linkSource?.y??y;e.x=e.linkTarget.x;e.y=e.linkTarget.y;}
     const before=e.age;e.age+=dt;if(e.mark)e.radius=Math.hypot(width,height)/2+32;if(e.anchor){e.x=e.anchor.x;e.y=e.anchor.y;}else if(e.follow){e.x=x;e.y=y;}
     if(e.delay){e.delay-=dt;if(e.delay>0){e.age=0;continue;}e.age=Math.max(0,-e.delay);e.delay=0;if(e.target?.hp>0){e.x=e.target.x;e.y=e.target.y;}}
     if(e.impactAt!==undefined&&!e.impacted&&e.age>=e.impactAt){e.impacted=true;e.groundContact=!ground||ground.contains(e.x,e.y);if(e.groundContact){root.BowAudio?.play('royal_impact');pulse(e.id,e.x,e.y,e.radius,{rootDuration:.6,spellKnock:38,groundOnly:true});}}
@@ -213,9 +214,18 @@
    effects=effects.filter(e=>e.delay>0||e.age<e.duration&&(!e.guard||e.guard.arrows.some(a=>!a.spent)));
   }
   function draw(ctx,ground,layer='all'){for(const e of effects){if(e.delay>0)continue;
+   if(layer==='ground'){if(e.roots&&root.DruidRootsVisual)root.DruidRootsVisual.draw(ctx,e,images(e.id),ground,'ground');continue;}
    const royal=e.guard?.id==='royal_protection'||e.guardBreak;
-   if(layer==='front'&&!royal)continue;
+   const arcane=!!root.SorcererArcaneVisual&&(e.guard?.id==='arcane_protection'||e.arcaneBreak);
+   const life=!!root.DruidLifeVisual&&e.healing;
+   if(layer==='front'&&!royal&&!arcane&&!life)continue;
    if(e.guardBreak&&(layer==='back'&&e.front||layer==='front'&&!e.front))continue;
+   if(e.id==='electric_link'&&root.SorcererLinkVisual?.draw(ctx,e,images(e.id)))continue;
+   if(e.id==='dark_vortex'&&root.SorcererVortexVisual?.draw(ctx,e,images(e.id),ground))continue;
+   if(e.id==='lightning_rain'&&root.SorcererStormVisual?.draw(ctx,e,images(e.id),ground))continue;
+   if(e.roots&&root.DruidRootsVisual?.draw(ctx,e,images(e.id),ground,'upper'))continue;
+   if(life&&root.DruidLifeVisual.draw(ctx,e,images(e.id),ground,layer))continue;
+   if(arcane){const image=images('arcane_protection')[0];if(e.arcaneBreak?root.SorcererArcaneVisual.block(ctx,e,image,ground,layer):root.SorcererArcaneVisual.guard(ctx,e,image,ground,layer))continue;}
    const list=images(e.id),pose=e.id==='royal_impact'?impactPose(e.age):null,img=list[pose?pose.frame:Math.min(list.length-1,e.oneShot?Math.floor(e.age*e.fps):e.roots?Math.min(4,Math.floor(e.age/.65*5)):Math.floor(e.age*20)%list.length)];if(!img?.complete||!img.naturalWidth)continue;
    ctx.save();ctx.globalAlpha=Math.min(1,e.age/.08,(e.duration-e.age)/.2);
    if(e.guardBreak){drawRoyalBlock(ctx,e,img,ground);ctx.restore();continue;}
@@ -244,9 +254,10 @@
   }}
   function consumeSword(sword){if(!guard||!guard.arrows.includes(sword)||sword.spent)return false;
    if(guard.id==='royal_protection'){const p=royalGuardPose(guard,sword.index);visual(guard.id,p.x,p.y,.34,p.size,{guardBreak:true,angle:p.angle,tilt:p.tilt,front:p.front});}
+   if(guard.id==='arcane_protection'&&root.SorcererArcaneVisual){const p=root.SorcererArcaneVisual.pose(guard,sword.index);visual(guard.id,p.x,p.y,.34,p.size,{arcaneBreak:true,angle:p.angle,tilt:p.tilt,front:p.front});}
    sword.spent=true;if(guard.arrows.every(a=>a.spent)){const id=guard.id;guard=null;times[id]=cooldown(catalog.find(s=>s.id===id));}return true;}
   function setDevCooldown(value){if(root.GameMode?.dev!==true)return false;devCooldown=value===1?1:null;if(devCooldown!==null)for(const key of Object.keys(times))times[key]=Math.min(times[key],1);return true;}
-  reset();return {setDevCooldown,consumeSword,cast,update,reset,draw,get cooldowns(){return {...times}},get incoming(){return 1},get basicDamage(){return fury>0?2:1},get attackRate(){return 1},get guard(){return guard},get furyFrame(){return Math.floor(furyAge*12)%8},get berserk(){return fury>0},get effects(){return effects}};
+  reset();return {setDevCooldown,consumeSword,cast,update,reset,draw,get cooldowns(){return {...times}},get incoming(){return 1},get basicDamage(){return fury>0?2:1},get attackRate(){return 1},get guard(){return guard},get furyVisual(){return {age:furyAge,remaining:fury}},get furyFrame(){return Math.floor(furyAge*12)%8},get berserk(){return fury>0},get effects(){return effects}};
  }
  root.VocationSpells={CATALOG,ART,IMPACT_ANCHORS,IMPACT_TIMING,impactPose,royalGuardPose,RANGES,TARGETED,targetStatus,targetPoint,images,create,demonicVolley};if(typeof module!=='undefined'&&module.exports)module.exports=root.VocationSpells;
 })(typeof window!=='undefined'?window:globalThis);

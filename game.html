@@ -132,7 +132,7 @@
   <div class="pause-actions"><button id="pause-settings-open" type="button" onclick="GameScreens.settings(true)">CONFIGURAÇÕES</button><button type="button" onclick="chooseNextRun()">REINICIAR PARTIDA</button><button type="button" onclick="location.href='index.html?camp=1'">VOLTAR AO MENU</button></div></div>
   <section id="pause-settings" hidden aria-label="Configurações da partida">
    <section class="pause-setting-group"><h2>SOM</h2><div class="pause-setting-row"><p>Volume geral, ambiente e efeitos.</p><button id="pause-audio" type="button" onclick="GameScreens.audio()">AJUSTAR SOM</button></div></section>
-   <section class="pause-setting-group"><h2>CONTROLES</h2><label class="pause-reload">Tecla de recarga <select id="reload-key" aria-label="Tecla de recarga"></select></label><button id="pause-spells" type="button" hidden>ATALHOS E POSIÇÃO DAS MAGIAS</button></section>
+   <section class="pause-setting-group"><h2>CONTROLES</h2><label class="pause-reload">Tecla de recarga <button id="reload-key" type="button" aria-label="Alterar tecla de recarga"></button></label><button id="pause-spells" type="button">CONFIGURAR ATALHOS</button></section>
    <section class="pause-setting-group"><h2>TELA</h2><div class="pause-setting-row"><p>Alternar entre janela e tela cheia.</p><button type="button" onclick="toggleFullscreen()">TELA CHEIA</button></div></section>
   </section>
   
@@ -170,7 +170,7 @@
 
 <script src="js/merchant-discovery.js"></script>
 <script src="js/talents.js"></script><script src="js/archer-spells.js"></script>
-<script src="js/vocation-spells.js"></script><script src="js/spell-aim.js"></script><script src="js/spell-controls.js"></script><script src="js/run-modifiers.js"></script>
+<script src="js/vocation-spells.js"></script><script src="js/knight-piercing-visual.js"></script><script src="js/knight-fury-visual.js"></script><script src="js/sorcerer-link-visual.js"></script><script src="js/sorcerer-vortex-visual.js"></script><script src="js/sorcerer-arcane-visual.js"></script><script src="js/sorcerer-storm-visual.js"></script><script src="js/druid-pack-visual.js"></script><script src="js/archer-triple-visual.js"></script><script src="js/archer-guard-visual.js"></script><script src="js/archer-extermination-visual.js"></script><script src="js/archer-rain-visual.js"></script><script src="js/druid-roots-visual.js"></script><script src="js/druid-life-visual.js"></script><script src="js/spell-aim.js"></script><script src="js/spell-controls.js"></script><script src="js/run-modifiers.js"></script>
 <script src="js/spell-teachings.js"></script>
 <script src="js/orb-drops.js"></script>
 <dialog id="spell-settings" aria-label="Configurar magias">
@@ -178,6 +178,8 @@
     <h2>CONFIGURAR MAGIAS</h2>
     <p>Os atalhos seguem a posição da spell e valem para todas as vocações.</p>
     <div id="spell-key-options"></div>
+    <div class="spell-size-setting"><label for="spell-size">Tamanho dos ícones <output id="spell-size-value" for="spell-size">100%</output></label><input id="spell-size" type="range" min="100" max="180" step="10" value="100"><div id="spell-size-preview" aria-label="Prévia do tamanho dos ícones"></div></div>
+
     <p id="spell-settings-status" role="status"></p>
     <div class="spell-settings-actions">
       <button type="button" id="spell-move-button">MOVER BARRA</button>
@@ -1484,6 +1486,8 @@ function projectileDamage(p,cfg,x,y){
 }
 function drawArcherEffects(){
  if(currentVocation!=='Archer'){vocationSpells.draw(ctx,groundSurface,'back');return;}
+ if(window.ArcherGuardVisual){ArcherGuardVisual.draw(ctx,{guard:archerSpells.guard,effects:archerSpells.guardianEffects},spellImages.guardians,groundSurface,'back');}
+ else{
  const guard=archerSpells.guard;
  ctx.save();
  if(guard){
@@ -1499,10 +1503,12 @@ function drawArcherEffects(){
   }
  }
  ctx.restore();
+ }
  if(!ravenMode)drawArrowRain();
 }
 function drawArrowRain(){
  const rain=archerSpells.rain;
+ if(rain&&window.ArcherRainVisual&&ArcherRainVisual.draw(ctx,rain,{arrow:shotImages.Archer,frames:rainFrames,projectileLength:(shotImages.Archer.naturalWidth||2142)*VOCATION_CONFIG.Archer.shotScale,height:canvas.height,ground:groundSurface}))return;
  if(rain){
   for(const drop of rain.drops){
    if(drop.age<0)continue;
@@ -2749,7 +2755,7 @@ function update(dt, realDt = dt) {
     if(p.guardArrow?.spent||p.royalSword?.spent){projectiles.splice(pi,1);continue;}
     if(p.spellId&&(countdownActive||bossIntroActive))continue;
     if(p.homing){const targets=monsters.filter(m=>m.hp>0&&!m.isRetreating&&m.grayForm!=='goo'&&m.grayForm!=='translucent');targets.sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));const t=targets[0];if(t){const desired=Math.atan2(t.y-p.y,t.x-p.x),diff=Math.atan2(Math.sin(desired-p.angle),Math.cos(desired-p.angle));p.angle+=Math.max(-3*dt,Math.min(3*dt,diff));p.vx=Math.cos(p.angle)*430;p.vy=Math.sin(p.angle)*430;}}
-    if(p.leap)p.age=(p.age||0)+dt;
+    if(p.leap||p.berserk||p.spellId==='piercing_sword'||p.spellId==='multidirectional'||p.spellId==='extermination')p.age=(p.age||0)+dt;
     p.life -= dt;
     if (p.life <= 0) {
       projectiles.splice(pi, 1);
@@ -3704,6 +3710,38 @@ function drawChargeAura(ctx, width, height, color) {
   ctx.restore();
 }
 
+function drawReloadReminder(ctx, x, y, cfg) {
+  if (autoReloadUnlocked || reserveRecovering || freeShot || currentResource >= shotCost(cfg) || !gameReady || isGameOver || currentHp <= 0) return;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const phase = reduced ? 0 : gameTimeSec * 3;
+  ctx.save();
+  ctx.translate(x, y - 82 + (reduced ? 0 : Math.sin(phase) * 3));
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const text = spellControls.reloadLabel.toUpperCase() + ' · RECARREGAR';
+  const width = Math.max(112, ctx.measureText(text).width + 34);
+  ctx.fillStyle = '#0b1019ed';
+  ctx.fillRect(-width / 2, -13, width, 26);
+  ctx.strokeStyle = '#d9b85b';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-width / 2, -13, width, 26);
+  ctx.save();
+  ctx.translate(-width / 2 + 13, 0);
+  ctx.rotate(reduced ? 0 : Math.sin(phase) * .25);
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 5, .6, Math.PI * 1.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(5, -5);ctx.lineTo(5, 0);ctx.lineTo(0, -1);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#f4d889';
+  ctx.fillText(text, 9, 0);
+  ctx.restore();
+}
+
 function draw() {
   BowAudio.syncVortex(vocationSpells.effects.some(e=>e.id==='dark_vortex'&&e.age<e.duration),isPaused||audioSettingsOpen||isGameOver);
   const w = canvas.width;
@@ -3800,6 +3838,7 @@ function draw() {
   BonsaiDiscovery.draw(ctx,bonsaiEncounter);
   ExpansionContent.draw(ctx,expansionScene,groundSurface);
   if(egyptianMode||expansionScene.phoenix){ctx.save();ctx.font='12px monospace';ctx.textAlign='center';ctx.fillStyle='#ead5a0';ctx.fillText(BowI18n.t('expansion.pending','INTEGRAÇÃO VISUAL · MECÂNICAS PENDENTES'),w/2,h-24);ctx.restore();}
+  if(currentVocation==='Druid'&&window.DruidRootsVisual)vocationSpells.draw(ctx,groundSurface,'ground');
   OrbDrops.draw(ctx,orbDrops,egyptianMode?ExpansionContent.ITEMS:ravenMode?{...BowTeachings.ORBS,...RavenStage.FEATHERS}:BowTeachings.ORBS,groundSurface);
   if(ravenMode)for(const m of monsters)RavenStage.telegraph(ctx,m,cx,cy);
 
@@ -3905,6 +3944,11 @@ function draw() {
   // ─── 4. PROJÉTEIS (ESPADAS / VARINHAS / PÁSSAROS / FLECHAS) ───
   for (const p of projectiles) {
     if(p.invisible)continue;
+    if(p.spellId==='piercing_sword'&&KnightPiercingVisual.draw(ctx,p,spellImages.piercing_sword,groundSurface))continue;
+    if(p.berserk&&!p.spellId&&KnightFuryVisual.projectile(ctx,p,spellImages.fury,groundSurface))continue;
+    if(p.spellId==='spectral_pack'&&DruidPackVisual.draw(ctx,p,spellImages.spectral_pack,groundSurface))continue;
+    if(p.spellId==='multidirectional'&&ArcherTripleVisual.draw(ctx,p,spellImages.multidirectional,groundSurface))continue;
+    if(p.spellId==='extermination'&&ArcherExterminationVisual.draw(ctx,p,spellImages.extermination,groundSurface))continue;
     ctx.save();
     const leap=p.leap?Math.sin(Math.min(1,(p.age||0)/.55)*Math.PI)*38:0;
     const shadowLength=p.leap?30:p.berserk?40:p.spellId==='piercing_sword'?34:18;
@@ -3947,6 +3991,8 @@ function draw() {
   }
 
   // ─── 6. PERSONAGEM NO CENTRO (ROTACIONANDO 360 COM RECUO) ───
+  const furyView=currentVocation==='Knight'?vocationSpells.furyVisual:null;
+  if(furyView?.remaining>0)KnightFuryVisual.aura(ctx,cx,cy,furyView,groundSurface,'back');
   ctx.save();
   // Posição com recuo na direção oposta ao disparo
   const recoilX = -Math.cos(playerAngle) * recoil;
@@ -3972,7 +4018,8 @@ function draw() {
     targetW = (hImg.naturalWidth / hImg.naturalHeight) * targetH;
 
     // 1º: Desenhar a camada base do herói (corpo / cabeça / pés)
-    ctx.drawImage(hImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    if(furyView?.remaining>0)KnightFuryVisual.heroLayer(ctx,hImg,heroImages[currentVocation],targetH,furyView);
+    else ctx.drawImage(hImg, -targetW / 2, -targetH / 2, targetW, targetH);
   }
 
   // ─── 2º: PROJÉTIL ACOPLADO NA CORDA DO ARCO (NOCK / PRONTO PARA DISPARO) ───
@@ -3993,13 +4040,13 @@ function draw() {
       ctx.translate(lateralDist, forwardDist);
       ctx.rotate(-Math.PI / 2);
 
-      const heroSw = vocationSpells.berserk?150:heroSImg.naturalWidth * heroCfg.shotScale;
-      const heroSh = vocationSpells.berserk?150*heroSImg.naturalHeight/heroSImg.naturalWidth:heroSImg.naturalHeight * heroCfg.shotScale;
+      const heroSw = vocationSpells.berserk?164:heroSImg.naturalWidth * heroCfg.shotScale;
+      const heroSh = vocationSpells.berserk?164*heroSImg.naturalHeight/heroSImg.naturalWidth:heroSImg.naturalHeight * heroCfg.shotScale;
 
       if (charging) drawChargeAura(ctx,heroSw,heroSh,heroCfg.color);
       const nockAlpha = charging ? 1 : Math.min(1, (cooldownProgress - 0.35) / 0.35);
       ctx.globalAlpha *= nockAlpha;
-      ctx.shadowColor = heroCfg.color;
+      ctx.shadowColor = vocationSpells.berserk?'#ed431c':heroCfg.color;
       ctx.shadowBlur = charging ? 10 + chargeElapsed*3 : 6;
       ctx.drawImage(heroSImg, -heroSw / 2, -heroSh / 2, heroSw, heroSh);
 
@@ -4010,13 +4057,17 @@ function draw() {
   // ─── 3º: SOBREPOSIÇÃO DO PERSONAGEM (BRAÇOS / ARCO / DETALHES FRONTAIS) ───
   // Desenha por cima do projétil encaixado, escondendo qualquer parte que ficava sobre a cabeça
   if (heroOvImg && heroOvImg.complete && heroOvImg.naturalWidth > 0 && targetW > 0) {
-    ctx.drawImage(heroOvImg, -targetW / 2, -targetH / 2, targetW, targetH);
+    if(furyView?.remaining>0)KnightFuryVisual.heroLayer(ctx,heroOvImg,heroOverlayImages[currentVocation],targetH,furyView);
+    else ctx.drawImage(heroOvImg, -targetW / 2, -targetH / 2, targetW, targetH);
   }
 
   ctx.restore();
 
   // Royal shields on the near side pass in front of the hero; all other spells stay in their original layer.
-  if(currentVocation==='Knight')vocationSpells.draw(ctx,groundSurface,'front');
+  if(currentVocation==='Knight'||currentVocation==='Sorcerer'||currentVocation==='Druid')vocationSpells.draw(ctx,groundSurface,'front');
+  if(currentVocation==='Archer'&&window.ArcherGuardVisual)ArcherGuardVisual.draw(ctx,{guard:archerSpells.guard,effects:archerSpells.guardianEffects},spellImages.guardians,groundSurface,'front');
+  if(furyView?.remaining>0)KnightFuryVisual.aura(ctx,cx,cy,furyView,groundSurface,'front');
+  drawReloadReminder(ctx, cx, cy, heroCfg);
 
   // ─── 2b. SLIMES DO PUZZLE (FASE 1) ───
   if (bossPhaseActive && kingSlime && kingSlime.phase === 1 && !bossIntroActive) {

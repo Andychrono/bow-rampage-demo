@@ -4,7 +4,7 @@ window.SpellControls = (() => {
   const defaults = ['KeyQ','KeyW','KeyE','KeyR'];
   const arrows = {ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→'};
   const punctuation = {Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Backslash:'\\',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',Backquote:'`'};
-  const allowed = code => typeof code === 'string' && (/^(Key[A-Z]|Digit[0-9]|Numpad[0-9])$/.test(code) || Object.hasOwn(arrows,code) || Object.hasOwn(punctuation,code));
+  const allowed = code => typeof code === 'string' && (code === 'Space' || /^(Key[A-Z]|Digit[0-9]|Numpad[0-9])$/.test(code) || Object.hasOwn(arrows,code) || Object.hasOwn(punctuation,code));
   const label = code => code==='Space'?'Espaço':arrows[code] || punctuation[code] || code.replace(/^(Key|Digit)/,'').replace(/^Numpad/,'NUM ');
   const clamp = value => Math.max(0,Math.min(1,value));
   function load() {
@@ -15,10 +15,11 @@ window.SpellControls = (() => {
       const validKeys = Array.isArray(keys) && keys.length === 4 && keys.every(allowed) && new Set(keys).size === 4 ? keys : [...defaults];
       return {
         keys: validKeys,
-        reload: allowed(saved?.reload) && !validKeys.includes(saved.reload) ? saved.reload : 'Space',
+        size: Number.isFinite(saved?.size) ? Math.max(100,Math.min(180,saved.size)) : 100,
+        reload: allowed(saved?.reload) && !validKeys.includes(saved.reload) ? saved.reload : (['Space',...defaults,...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ',c=>'Key'+c)].find(code=>!validKeys.includes(code))),
         position: position && Number.isFinite(position.x) && Number.isFinite(position.y) ? {x:clamp(position.x),y:clamp(position.y)} : null
       };
-    } catch { return {keys:[...defaults],reload:'Space',position:null}; }
+    } catch { return {keys:[...defaults],reload:'Space',position:null,size:100}; }
   }
   function create(bar, catalog, learned = () => true) {
     let settings = load(), capturing = -1, drag = null;
@@ -29,7 +30,10 @@ window.SpellControls = (() => {
     const status = document.getElementById('spell-settings-status');
     const rows = document.getElementById('spell-key-options');
     const reload = document.getElementById('reload-key');
-    const reloadCodes = ['Space',...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ',letter=>'Key'+letter),...Array.from('0123456789',digit=>'Digit'+digit),...Array.from('0123456789',digit=>'Numpad'+digit),...Object.keys(arrows),...Object.keys(punctuation)];
+    const sizeInput = document.getElementById('spell-size');
+    const sizeValue = document.getElementById('spell-size-value');
+    const sizePreview = document.getElementById('spell-size-preview');
+
     const slot = spell => defaults.indexOf('Key'+spell.key);
     const codeFor = spell => settings.keys[slot(spell)];
     function save() {
@@ -43,27 +47,34 @@ window.SpellControls = (() => {
       if (element === preview) positionPanel.classList.toggle('position-help-bottom',!p || p.y < .5);
     }
     function paint() {
-      reload.replaceChildren(...reloadCodes.filter(code=>!settings.keys.includes(code)).map(code=>new Option(label(code),code)));
-      reload.value = settings.reload;
+      sizeInput.value = settings.size;
+      sizeValue.textContent = settings.size + '%';
+      for (const element of [bar,preview,sizePreview]) element.style.setProperty('--spell-scale', String(settings.size / 100));
+      reload.textContent = label(settings.reload) + ' · ALTERAR';
+      const reloadButton = document.getElementById('reload-key-capture');
+      if (reloadButton) reloadButton.textContent = capturing === 4 ? 'PRESSIONE A TECLA DESEJADA' : label(settings.reload);
       catalog.forEach((spell,index) => {
-        rows.children[index].hidden = !learned(spell.id);
+        rows.children[index].hidden = false;
         preview.children[index].hidden = !learned(spell.id);
         const button = bar.children[index], shortcut = label(codeFor(spell));
         button.querySelector('kbd').textContent = shortcut;
         button.title = spell.name + ' · ' + shortcut + ' · ' + spell.cooldown + 's';
         button.setAttribute('aria-label',spell.name + ', tecla ' + shortcut);
-        rows.children[index].querySelector('button').textContent = capturing === index ? 'PRESSIONE UMA TECLA' : shortcut;
+        rows.children[index].querySelector('button').textContent = capturing === index ? 'PRESSIONE A TECLA DESEJADA' : shortcut;
         preview.children[index].querySelector('kbd').textContent = shortcut;
       });
       position(bar);
       position(preview);
     }
-    reload.onchange = () => { settings.reload=reload.value;save(); };
+    function captureReload(){capturing=4;status.textContent='Pressione a tecla desejada para recarregar. Esc cancela.';paint();document.getElementById('reload-key-capture').focus();}
+    reload.onclick = () => { dialog.showModal();showPosition(false);captureReload(); };
+    const reloadRow=document.createElement('div'),reloadName=document.createElement('span'),reloadButton=document.createElement('button');
+    reloadName.textContent='Recarregar recurso';reloadButton.id='reload-key-capture';reloadButton.type='button';reloadButton.onclick=captureReload;reloadRow.append(reloadName,reloadButton);
     for (const spell of catalog) {
       const index = slot(spell);
       const row = document.createElement('div');
       const name = document.createElement('span');
-      name.textContent = spell.name;
+      name.textContent = learned(spell.id) ? spell.name : 'Magia ' + spell.key;
       const button = document.createElement('button');
       button.type = 'button';
       button.setAttribute('aria-label','Trocar atalho de ' + spell.name);
@@ -82,6 +93,14 @@ window.SpellControls = (() => {
       icon.append(image,document.createElement('kbd'));
       preview.append(icon);
     }
+    rows.append(reloadRow);
+    for (const spell of catalog.filter(spell=>learned(spell.id))) {
+      const icon=document.createElement('span'),image=document.createElement('img');
+      icon.className='spell-button';image.src=spell.icon;image.alt=spell.name;icon.append(image);sizePreview.append(icon);
+    }
+    sizePreview.hidden = !catalog.some(spell=>learned(spell.id));
+    sizeInput.oninput = () => {settings.size=Math.max(100,Math.min(180,Number(sizeInput.value)||100));paint();save();};
+    document.getElementById('spell-move-button').hidden = !catalog.some(spell=>learned(spell.id));
     function move(x,y) {
       settings.position = {
         x:clamp(x / Math.max(1,innerWidth-preview.offsetWidth)),
@@ -114,16 +133,19 @@ window.SpellControls = (() => {
         status.textContent = 'Use uma letra, número, seta ou tecla de pontuação.';
         return;
       }
-      const previous = settings.keys[capturing];
-      if(event.code===settings.reload){
-        status.textContent = 'Esse atalho está reservado para a recarga.';
-        return;
-      }
+      const previous = capturing === 4 ? settings.reload : settings.keys[capturing];
       const other = settings.keys.indexOf(event.code);
-      if (other >= 0) settings.keys[other] = previous;
-      settings.keys[capturing] = event.code;
+      let swapped = false;
+      if (capturing === 4) {
+        if (other >= 0) {settings.keys[other] = previous;swapped = previous !== event.code;}
+        settings.reload = event.code;
+      } else {
+        if (event.code === settings.reload) {settings.reload = previous;swapped = true;}
+        else if (other >= 0) {settings.keys[other] = previous;swapped = previous !== event.code;}
+        settings.keys[capturing] = event.code;
+      }
       capturing = -1;
-      status.textContent = other >= 0 && previous !== event.code ? 'Os dois atalhos foram trocados.' : 'Atalho atualizado.';
+      status.textContent = swapped ? 'Atalhos trocados para evitar conflito.' : 'Atalho atualizado.';
       save();
       paint();
     });
@@ -164,8 +186,8 @@ window.SpellControls = (() => {
     document.getElementById('spell-settings-close').onclick = () => dialog.close();
     document.getElementById('spell-settings-reset').onclick = () => {
       capturing = -1;
-      settings = {keys:[...defaults],reload:defaults.includes(settings.reload)?'Space':settings.reload,position:null};
-      status.textContent = 'Posição e atalhos padrão restaurados.';
+      settings = {keys:[...defaults],reload:defaults.includes(settings.reload)?'Space':settings.reload,position:null,size:100};
+      status.textContent = 'Tamanho, posição e atalhos padrão restaurados.';
       save();
       paint();
     };
