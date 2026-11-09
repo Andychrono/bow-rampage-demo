@@ -1,0 +1,4357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title data-i18n="screen.arena.title">Bow Rampage — 360° Arena</title><link rel="icon" href="data:,">
+  <style>html{background:#0b1516}#arena-transition{position:fixed;inset:0;z-index:20000;background:#0b1516;color:#e9d39c}</style>
+  <link rel="preload" as="image" fetchpriority="high" href="assets/maps/slime-forest/01-morning-base.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'"/>
+  <style>
+    :root {
+      --gold: #f5c842;
+      --gold-glow: rgba(245, 200, 66, 0.4);
+      --bg: #07090f;
+      --panel: rgba(13, 18, 31, 0.88);
+      --border: #2a385c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    html, body {
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
+    body {
+      background: #0b1516;
+      color: #f1f5f9;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      cursor: crosshair;
+    }
+
+    /* ─── CANVAS FULL-BLEED (RESOLUÇÃO ADAPTATIVA REAL) ─── */
+    #viewport {
+      position: absolute;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      cursor: crosshair;
+      z-index: 1;
+    }
+
+    /* ─── HUD SUPERIOR ─── */
+    .hud-top {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: linear-gradient(180deg, rgba(7,9,15,0.92) 0%, rgba(7,9,15,0.6) 80%, transparent 100%);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .hud-element {
+      pointer-events: auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 14px;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .btn-hud {
+      background: #1a233a;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .btn-hud:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+  </style>
+<link rel="stylesheet" href="css/spells.css">
+<link rel="stylesheet" href="css/spell-controls.css">
+<link rel="stylesheet" href="css/game-screens.css">
+<link rel="stylesheet" href="css/arena-transition.css">
+<link rel="stylesheet" href="css/achievements.css">
+<link rel="stylesheet" href="css/run-modifiers.css">
+<style>.demo-label{position:fixed;left:12px;bottom:10px;z-index:9998;color:#c6b17e;font:9px monospace;letter-spacing:1px;pointer-events:none}#stage-options{grid-template-columns:minmax(0,390px);justify-content:center}#station-secrets{display:none!important}</style></head>
+<body data-audio-scene="game" class="arena-loading">
+<section id="arena-transition" aria-label="Preparação da partida" role="status" ><div class="arena-preparation"><small>BOW RAMPAGE</small><h1>ENTRANDO NA CLAREIRA</h1><div class="arena-load-track"><div id="arena-load-progress"></div></div><p id="arena-load-status">Preparando a jornada.</p><div id="arena-load-actions" hidden><button type="button" onclick="location.reload()">Tentar novamente</button><a href="index.html?camp=1">Voltar ao menu</a></div></div></section>
+
+<canvas id="viewport"></canvas>
+<div id="spell-bar" hidden aria-label="Habilidades aprendidas"></div>
+
+<!-- HUD de combate: informações essenciais, sem faixa de fundo. -->
+<div class="hud-top combat-hud">
+ <div class="combat-vitals">
+  <span id="vocation-label" hidden></span><span id="kill-count" hidden>0</span>
+  <section class="vital-meter health-meter" aria-label="Vida"><div class="meter-label"><span>VIDA</span><span id="hp-text">180/180</span></div><div class="meter-track"><div id="hp-bar"></div></div></section>
+  <section class="vital-meter resource-meter" id="resource-box" aria-label="Recurso"><div class="meter-label"><span id="resource-name">VIGOR</span><span id="resource-text">100/100</span></div><div class="meter-track"><div id="resource-bar"></div></div><div id="resource-recovery-status" hidden><span id="resource-recovery-hint"></span><progress id="resource-delay-meter" aria-label="Espera até a recuperação" max="1" hidden></progress></div></section>
+ </div>
+ <div id="phase-badge" class="combat-clock"><span id="phase-text">00:00</span></div>
+ <div id="next-card-progress" hidden title="Abates para desbloquear uma Carta da Jornada">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 18 3.5 16.5 7.5 4l4 1.5"/><rect x="9" y="6" width="11" height="15" rx="2"/><path d="m14.5 10 2.5 3.5-2.5 3.5-2.5-3.5Z"/></svg>
+  <div><span id="card-progress-value"></span><progress id="card-progress-meter" aria-label="Abates para desbloquear uma Carta da Jornada"></progress></div>
+ </div>
+ <button class="btn-hud pause-trigger" type="button" onclick="GameScreens.pause()" aria-label="Abrir menu da partida">MENU</button>
+</div>
+
+<section id="pause-screen" class="run-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pause-title">
+ <div class="pause-panel run-panel">
+  <header class="pause-header"><div><h1 id="pause-title">MENU DA JORNADA</h1><p id="pause-stage">CLAREIRA ENCANTADA</p></div><button id="pause-settings-back" type="button" hidden onclick="GameScreens.settings(false)">VOLTAR</button><button id="pause-resume" class="run-primary" type="button" onclick="GameScreens.resume()">CONTINUAR</button></header>
+  <div class="pause-layout"><aside class="pause-portrait"><img id="pause-portrait" alt=""><div class="pause-portrait-fade"></div><span id="pause-vocation"></span></aside><div class="pause-content">
+  <div id="pause-main"><h2 class="pause-section-title">RESUMO DA JORNADA</h2><div class="run-stats" id="pause-stats"></div>
+  <p id="boss-power-lock" hidden>PACTOS, CARTAS E MAGIAS SUSPENSOS NESTE COMBATE.</p>
+  <section class="run-pact" id="modifier-summary" hidden><h2>CARTAS DA JORNADA</h2><p></p></section>
+  <section id="pause-pact" class="run-pact" hidden><h2>PACTO DA JORNADA</h2><strong id="pause-pact-name"></strong><p id="pause-pact-gain"></p><p id="pause-pact-loss"></p></section>
+  <div class="pause-actions"><button id="pause-settings-open" type="button" onclick="GameScreens.settings(true)">CONFIGURAÇÕES</button><button type="button" onclick="chooseNextRun()">REINICIAR PARTIDA</button><button type="button" onclick="location.href='index.html?camp=1'">VOLTAR AO MENU</button></div></div>
+  <section id="pause-settings" hidden aria-label="Configurações da partida">
+   <section class="pause-setting-group"><h2>SOM</h2><div class="pause-setting-row"><p>Volume geral, ambiente e efeitos.</p><button id="pause-audio" type="button" onclick="GameScreens.audio()">AJUSTAR SOM</button></div></section>
+   <section class="pause-setting-group"><h2>CONTROLES</h2><label class="pause-reload">Tecla de recarga <select id="reload-key" aria-label="Tecla de recarga"></select></label><button id="pause-spells" type="button" hidden>ATALHOS E POSIÇÃO DAS MAGIAS</button></section>
+   <section class="pause-setting-group"><h2>TELA</h2><div class="pause-setting-row"><p>Alternar entre janela e tela cheia.</p><button type="button" onclick="toggleFullscreen()">TELA CHEIA</button></div></section>
+  </section>
+  
+ </div></div></div>
+</section>
+<section id="game-over-screen" class="run-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="go-title">
+ <div id="go-panel" class="result-panel run-panel">
+  <div class="result-portrait"><img id="go-portrait" alt=""><div class="result-portrait-shade"></div><span id="go-voc"></span></div>
+  <div class="result-content">
+   <header class="run-heading"><span id="go-eyebrow" class="run-eyebrow">FIM DA JORNADA</span><h1 id="go-title">DERROTA</h1><p id="go-subtitle">SUA DEFESA FOI SUPERADA PELA HORDA!</p></header>
+   <div class="run-stats result-stats"><div><span>TEMPO SOBREVIVIDO</span><strong id="go-time">00:00</strong></div><div><span>SLIMES ABATIDAS</span><strong id="go-kills">0</strong></div><div><span>ESTÁGIO ALCANÇADO</span><strong id="go-phase">MANHÃ</strong></div><div><span>ABATES TOTAIS</span><strong id="go-total">0</strong></div></div>
+   <p id="go-boss" class="result-boss" hidden>REI SLIME DERROTADO</p>
+   <section id="go-fast-summary" class="run-pact" hidden><h2>MODO ACELERADO</h2><p></p></section>
+   <section id="go-raid-record" class="run-pact" hidden><h2>RECORDE DE INVASÕES</h2><p></p></section>
+   <section id="go-pact-section" class="run-pact" hidden><h2>PACTO DA JORNADA</h2><p id="go-pact"></p></section>
+   <p id="go-reward" class="result-reward" role="status" hidden></p>
+   <div class="result-actions"><button id="btn-restart" class="run-primary" onclick="chooseNextRun()">NOVA JORNADA</button><button onclick="location.href='index.html?camp=1'">VOLTAR AO ACAMPAMENTO</button><button class="result-audio" onclick="GameScreens.audio()" aria-label="Configurar som">SOM</button></div>
+  </div>
+ </div>
+</section>
+
+<script src="js/i18n-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/demo-content.js"></script><script src="js/environment.js"></script><script src="js/inventory.js"></script>
+<script src="js/audio-bank.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/boss-phase3.js"></script>
+<script src="js/powerups.js"></script>
+<script src="js/run-pacts.js"></script>
+<script src="js/discovery.js"></script>
+<script src="js/forge.js"></script><script src="js/stages.js"></script>
+<script src="js/ground-surface.js"></script><script src="js/ground-shadows.js"></script>
+<script src="js/frog-bonus.js"></script>
+<script src="js/bonsai-discovery.js"></script>
+
+<script src="js/merchant-discovery.js"></script>
+<script src="js/talents.js"></script><script src="js/archer-spells.js"></script>
+<script src="js/vocation-spells.js"></script><script src="js/spell-aim.js"></script><script src="js/spell-controls.js"></script><script src="js/run-modifiers.js"></script>
+<script src="js/spell-teachings.js"></script>
+<script src="js/orb-drops.js"></script>
+<dialog id="spell-settings" aria-label="Configurar magias">
+  <section id="spell-settings-panel">
+    <h2>CONFIGURAR MAGIAS</h2>
+    <p>Os atalhos seguem a posição da spell e valem para todas as vocações.</p>
+    <div id="spell-key-options"></div>
+    <p id="spell-settings-status" role="status"></p>
+    <div class="spell-settings-actions">
+      <button type="button" id="spell-move-button">MOVER BARRA</button>
+      <button type="button" id="spell-settings-reset">RESTAURAR PADRÃO</button>
+      <button type="button" id="spell-settings-close">VOLTAR</button>
+    </div>
+  </section>
+  <section id="spell-position-panel" hidden>
+    <p>Arraste os ícones ou use as setas do teclado para mover.</p>
+    <button type="button" id="spell-position-done">CONCLUIR</button>
+  </section>
+  <div id="spell-position-preview" tabindex="0" aria-label="Posição da barra de spells" hidden></div>
+</dialog>
+<dialog id="modifier-dialog" aria-labelledby="modifier-title" aria-describedby="modifier-description">
+  <header><small id="modifier-milestone"></small><h1 id="modifier-title" tabindex="-1">CARTAS DA JORNADA</h1>
+  <p id="modifier-description">Selecione uma carta e confirme para continuar.</p></header>
+  <div id="modifier-options"></div>
+  <footer><button type="button" id="modifier-confirm" disabled>CONFIRMAR CARTA</button></footer>
+</dialog>
+<script src="js/achievements.js"></script>
+<script src="js/journey-modes.js"></script>
+<script src="js/vocation-pacts.js"></script>
+<script src="js/economy.js"></script>
+<script src="js/pact-raids.js"></script>
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+//  TRAVAMENTO DE ZOOM DO NAVEGADOR (CTRL + SCROLL / TECLAS ZOOM)
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('wheel', (e) => {
+  if (e.ctrlKey) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && (
+    e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0' ||
+    e.keyCode === 187 || e.keyCode === 189 || e.keyCode === 107 || e.keyCode === 109 || e.keyCode === 96 || e.keyCode === 48
+  )) {
+    e.preventDefault();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+//  CANVAS & AUDIO SETUP
+// ══════════════════════════════════════════════════════════════
+const canvas = document.getElementById('viewport');
+const ctx = canvas.getContext('2d');
+
+// ── RESOLUÇÃO ADAPTATIVA REAL (Safe-Zone Ultrawide) ──────────────────
+// O canvas ocupa SEMPRE 100% da janela/monitor, sem letras-box, sem bordas.
+// VIRTUAL_WIDTH/HEIGHT são constantes de design de referência (mantidas para
+// compatibilidade com os testes de regressão; a resolução real é window.inner*).
+// Quando o jogador redimensiona a janela, todas as entidades (slimes, projéteis,
+// partículas, números de dano) são deslocadas proporcionalmente ao novo centro,
+// de modo que o herói permanece sempre no meio perfeito da tela.
+const VIRTUAL_WIDTH = 1600;
+const VIRTUAL_HEIGHT = 900;
+
+let lastCanvasW = window.innerWidth;
+let lastCanvasH = window.innerHeight;
+
+function resize() {
+  const newW = window.innerWidth;
+  const newH = window.innerHeight;
+
+  const oldCx = lastCanvasW / 2;
+  const oldCy = lastCanvasH / 2;
+  const newCx = newW / 2;
+  const newCy = newH / 2;
+
+  const dx = newCx - oldCx;
+  const dy = newCy - oldCy;
+
+  // Reposiciona todas as entidades ao novo centro para preservar jogabilidade
+  if ((dx !== 0 || dy !== 0) && typeof monsters !== 'undefined') {
+    for (const m of monsters) { m.x += dx; m.y += dy; }
+    if (typeof projectiles !== 'undefined') {
+      for (const p of projectiles) {
+        p.x += dx; p.y += dy;
+        if (p.trail) for (const tr of p.trail) { tr.x += dx; tr.y += dy; }
+      }
+    }
+    if (typeof damageNumbers !== 'undefined') {
+      for (const dn of damageNumbers) { dn.x += dx; dn.y += dy; }
+    }
+    if (typeof particles !== 'undefined') {
+      for (const pt of particles) { pt.x += dx; pt.y += dy; }
+    }
+  }
+
+  canvas.width  = newW;
+  canvas.height = newH;
+  canvas.style.width  = newW + 'px';
+  canvas.style.height = newH + 'px';
+
+  lastCanvasW = newW;
+  lastCanvasH = newH;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+// Efeitos gravados e mixer compartilhado com o menu.
+let audioSettingsOpen = false;
+let isPaused=false;
+let spellAim=null;
+let gameReady=false;
+let pendingWaveSpawns=[];
+window.addEventListener('bow-audio-settings', event => {
+  audioSettingsOpen = event.detail.open;
+  isMouseDown = false;
+});
+function playShotSound(voc) { BowAudio.play('shot_' + voc.toLowerCase()); if(voc==='Archer')BowAudio.play('arrow_flight',{volume:.45}); }
+function playEmptySound() { BowAudio.play('empty'); }
+function playHitSound() { BowAudio.play('hit'); }
+function playSlimeDeathSound() { BowAudio.play('death'); }
+function playSlimeSplashSound() { BowAudio.play('landing'); }
+function playGameOverSound() { BowAudio.play('defeat'); }
+
+const trainingMode=GameMode.dev===true&&new URLSearchParams(location.search).get('training')==='1';
+const currentRegion=StageCatalog.resolve(localStorage.getItem('bbl_demo_online_v1_stage'));
+const ravenMode=currentRegion.id==='raven_peak';
+const egyptianMode=currentRegion.id==='egyptian_arena';
+const groundSurface=GroundSurface.create({enabled:()=>ravenMode,polygon:()=>RavenStage.stonePolygon(canvas.width,canvas.height),contains:(x,y)=>RavenStage.onStone(x,y,canvas.width,canvas.height)});
+let expansionScene=ExpansionContent.create();
+if(ravenMode)RavenStage.prepare();
+const MAP_STAGES = egyptianMode?ExpansionContent.MAPS:ravenMode?RavenStage.MAPS:[
+  {
+    label: 'manhã',
+    base:   'assets/maps/slime-forest/01-morning-base.webp',
+    overlay:'assets/maps/slime-forest/01-morning-overlay.webp'
+  },
+  {
+    label: 'entardecer',
+    base:   'assets/maps/slime-forest/02-dusk-base.webp',
+    overlay:'assets/maps/slime-forest/02-dusk-overlay.webp'
+  },
+  {
+    label: 'anoitecer',
+    base:   'assets/maps/slime-forest/03-twilight-base.webp',
+    overlay:'assets/maps/slime-forest/03-twilight-overlay.webp'
+  },
+  {
+    label: 'noite',
+    base:   'assets/maps/slime-forest/04-night-base.webp',
+    overlay:'assets/maps/slime-forest/04-night-overlay.webp'
+  }
+];
+
+// Pré-carrega todas as imagens de base e sobreposição
+const mapStageBaseImgs    = MAP_STAGES.map(s => { const i = new Image(); i.src = s.base;    return i; });
+const mapStageOverlayImgs = MAP_STAGES.map(s => { const i = new Image(); if(s.overlay)i.src = s.overlay; return i; });
+
+// ── Controle de transição ──────────────────────────────────────
+// currentMapStage: índice do estágio atual (0=manhã … 3=noite)
+// mapTransitionAlpha: 0=completamente no estágio atual, 1=completamente no próximo
+// mapTransitionActive: true enquanto estiver em crossfade
+let currentMapStage       = 0;
+let mapTransitionAlpha    = 0;
+let mapTransitionActive   = false;
+const MAP_TRANSITION_SPEED = 0.004; // alpha por frame (~60fps → ~4min para cruzar totalmente)
+
+// Tempo acumulado do jogo (em segundos) — controla quando cada estágio começa
+let gameTimeSec = 0;
+
+// Gatilhos de tempo (segundos) para iniciar a transição para cada próximo estágio
+// Ajuste esses valores para controlar o ritmo dia→noite
+const MAP_TRANSITION_TRIGGERS = egyptianMode?[]:ravenMode?[180,360,540,720]:[
+  180,  // aos 3 min → começa transição manhã → entardecer
+  360,  // aos 6 min → começa transição entardecer → anoitecer
+  540,  // aos 9 min → começa transição anoitecer → noite
+];
+let nextTransitionIdx = 0; // qual gatilho monitorar a seguir
+
+// Compat: mantém mapImages/mapOverlayImages/currentMapIdx usados em outros lugares
+let currentMapIdx = 0;
+const mapImages        = mapStageBaseImgs;
+const mapOverlayImages = mapStageOverlayImgs;
+
+// ══════════════════════════════════════════════════════════════
+//  CARREGAMENTO DAS 4 VOCAÇÕES & PROJÉTEIS
+// ══════════════════════════════════════════════════════════════
+const VOCATION_CONFIG = {
+  Knight: {
+    heroSrc: 'assets/characters/hero_knight.webp',
+    shotSrc: 'assets/projectiles/shot_sword.webp',
+    name: 'Knight',
+    bowForwardOffset: 40,
+    bowLateralOffset: 0,
+    shotSpeed: 540,
+    shotScale: 0.0412,
+    color: '#93c5fd',
+    recoilAmount: 7,
+    // ── BALANCEADO: tanque lento, stamina melhorada para aguentar o combate ──
+    maxHp: 180,
+    damage: 35,            // 1 golpe mata slime normal (32 HP)
+    knockback: 32,
+    resourceType: 'stamina',
+    resourceName: ' VIGOR',
+    resourceColor: '#eab308',
+    resourceCost: BowPowerups.resources.Knight.cost,
+    fireRate: 1.05,
+  },
+  Sorcerer: {
+    heroSrc: 'assets/characters/hero_sorcerer.webp',
+    shotSrc: 'assets/projectiles/shot_wand.webp',
+    name: 'Sorcerer',
+    bowForwardOffset: 38,
+    bowLateralOffset: 0,
+    shotSpeed: 660,
+    shotScale: 0.0346,
+    color: '#d8b4fe',
+    recoilAmount: 5,
+    // ── BALANCEADO: mago frágil mas mana flui bem; dano melhorado ──
+    maxHp: 120,
+    damage: 27,
+    knockback: 12,
+    resourceType: 'mana',
+    resourceName: ' MANA',
+    resourceColor: '#a855f7',
+    resourceCost: BowPowerups.resources.Sorcerer.cost,
+    fireRate: 1.5
+  },
+  Druid: {
+    heroSrc: 'assets/characters/hero_druid.webp',
+    shotSrc: 'assets/projectiles/shot_spirit.webp',
+    name: 'Druid',
+    bowForwardOffset: 38,
+    bowLateralOffset: 0,
+    shotSpeed: 600,
+    shotScale: 0.0319,
+    color: '#86efac',
+    recoilAmount: 5,
+    maxHp: 120,
+    damage: 26,
+    knockback: 14,         // Leve aumento de knockback
+    passiveHpRegen: 0.7,
+    resourceType: 'seeds',
+    resourceName: ' SEMENTES',
+    resourceColor: '#22c55e',
+    resourceCost: BowPowerups.resources.Druid.cost,
+    fireRate: 1.5,
+  },
+  Archer: {
+    heroSrc: 'assets/characters/hero_archer.webp',
+    shotSrc: 'assets/projectiles/shot_arrow.webp',
+    name: 'Archer',
+    bowForwardOffset: 42,
+    bowLateralOffset: 0,
+    shotSpeed: 740,
+    shotScale: 0.0346,
+    color: '#fde047',
+    recoilAmount: 6,
+    maxHp: 115,
+    damage: 20,
+    knockback: 18,
+    resourceType: 'quiver',
+    resourceName: ' ALJAVA',
+    resourceColor: '#f59e0b',
+    resourceCost: BowPowerups.resources.Archer.cost,
+    fireRate: 2.2,
+  }
+};
+
+let currentVocation = localStorage.getItem('bbl_demo_online_v1_vocation') || 'Knight';
+if (!VOCATION_CONFIG[currentVocation]) currentVocation = 'Knight';
+
+let selectedRunPact = null;
+let activePacts = [];
+let nextPactAt = VocationPacts.interval;
+let acceleratedRun = false;
+let survivalRun = false;
+try {
+  const mode = sessionStorage.getItem('bbl_demo_online_v1_next_run_mode');
+  sessionStorage.removeItem('bbl_demo_online_v1_next_run_mode');
+  const modes=JourneyModes.available(currentRegion.id);
+  acceleratedRun=mode==='fast'&&modes.includes('fast');
+  const pending = JSON.parse(sessionStorage.getItem('bbl_demo_online_v1_next_run_pact') || 'null');
+  sessionStorage.removeItem('bbl_demo_online_v1_next_run_pact');
+  if(BowDiscovery.pactsUnlocked()&&pending?.vocation===currentVocation){
+    if(modes.includes('survival')&&(mode==='survival'||mode==='pact')){
+      selectedRunPact=VocationPacts.get(currentVocation,pending.id)||null;
+      survivalRun=!!selectedRunPact;
+    }else if(mode==='normal'||mode===null)selectedRunPact=RunPacts.get(pending.id);
+  }
+} catch {}
+activePacts=selectedRunPact?[selectedRunPact]:[];
+let runPact = RunPacts.effects();
+document.getElementById('go-pact').textContent = selectedRunPact ? 'PACTO: '+selectedRunPact.name.toUpperCase() : '';
+// O pacto é consultado no pause, mantendo o HUD compacto.
+let bblSave = null;
+try {
+  bblSave = JSON.parse(localStorage.getItem('bbl_demo_online_v1_save_v1') || '{}');
+} catch(e) {}
+const unmodifiedVocations = Object.fromEntries(
+  Object.entries(VOCATION_CONFIG).map(([vocation,cfg]) => [vocation,{...cfg}])
+);
+function applyRunPact(id) {
+  runPact = id&&survivalRun?VocationPacts.stack(RunPacts.effects(),activePacts):RunPacts.effects(id);
+  for (const [vocation,cfg] of Object.entries(VOCATION_CONFIG)) {
+    const base = unmodifiedVocations[vocation];
+    cfg.maxResource = BowPowerups.reserveCapacity(vocation,BowPowerups.level(bblSave,'reserve_capacity',vocation)) * runPact.resource;
+    cfg.regenDelay = BowPowerups.recoveryDelay(BowPowerups.level(bblSave,'second_wind',vocation));
+    cfg.fireRate = base.fireRate * runPact.rate;
+    cfg.resourceCost = Math.min(cfg.maxResource,base.resourceCost * runPact.cost);
+    cfg.knockback = base.knockback * runPact.knock;
+    cfg.shotSpeed = base.shotSpeed * runPact.speed;
+  }
+}
+applyRunPact(selectedRunPact?.id);
+let pactReviveAvailable = !!runPact.revive;
+function pactDamage(base, x, y) {
+  return RunPacts.damage(runPact, base, {hp:currentHp,maxHp:maxPlayerHp,distance:Math.hypot(x-canvas.width/2,y-canvas.height/2)});
+}
+function pactLifeSteal(damage, hpBefore) {
+  if (currentHp > 0) currentHp += RunPacts.lifeStolen(runPact, damage, hpBefore, maxPlayerHp-currentHp);
+}
+function applyPlayerDamage(amount) {
+  const lowLife = currentHp < maxPlayerHp * .30 ? .15 * rank('M32') : 0;
+  const cardResistance = Math.min(.60,.08 * rank('M26') + lowLife);
+  const patientGuard = rank('M35') && runTimer-lastModifierHit >= 20 ? .5 : 1;
+  const dealt = Math.max(1, Math.round(amount * runPact.incoming * (1-cardResistance) * patientGuard * vocationSpells.incoming));
+  lastModifierHit = runTimer;
+  currentHp = Math.max(0,currentHp-dealt);
+  if (currentHp <= 0 && pactReviveAvailable) {
+    pactReviveAvailable = false;
+    currentHp = Math.max(1,Math.round(maxPlayerHp*.35));
+    playerInvulnTimer = Math.max(playerInvulnTimer,2.5);
+    triggerBanner('VIDA EMPRESTADA!', 'SEGUNDA CHANCE CONSUMIDA — NÃO HAVERÁ OUTRA NESTA PARTIDA.', 4);
+    BowAudio.play('upgrade');
+  }
+  if (currentHp > 0 && rank('M21') && runTimer-lastResourceHit >= 2) {
+    recoverReserve(reserveCapacity() * .15 * rank('M21'));
+    lastResourceHit = runTimer;
+  }
+  return dealt;
+}
+function chooseNextRun() { window.location.href='index.html?choosePact=1'; }
+
+document.getElementById('vocation-label').textContent = currentVocation.toUpperCase();
+
+// Preload imagens dos heróis, sobreposições e projéteis
+const HERO_OVERLAY_SRCS = {
+  Knight: 'assets/characters/hero_knight_overlay.webp',
+  Sorcerer: 'assets/characters/hero_sorcerer_overlay.webp',
+  Druid: 'assets/characters/hero_druid_overlay.webp',
+  Archer: 'assets/characters/hero_archer_overlay.webp'
+};
+
+const heroImages = {};
+const heroOverlayImages = {};
+const shotImages = {};
+Object.keys(VOCATION_CONFIG).forEach(vKey => {
+  const hImg = new Image();
+  hImg.src = VOCATION_CONFIG[vKey].heroSrc;
+  heroImages[vKey] = hImg;
+
+  const ovImg = new Image();
+  ovImg.src = HERO_OVERLAY_SRCS[vKey];
+  heroOverlayImages[vKey] = ovImg;
+
+  const sImg = new Image();
+  sImg.src = VOCATION_CONFIG[vKey].shotSrc;
+  shotImages[vKey] = sImg;
+});
+
+// ══════════════════════════════════════════════════════════════
+//  PRELOAD DE FRAMES DAS SLIMES (Verde 22 frames, Coloridas 66 frames)
+// ══════════════════════════════════════════════════════════════
+
+// Slime Verde — frames simples (frame_00.webp … frame_21.webp)
+const SLIME_FRAME_COUNT = 22;
+const SLIME_FPS = 11; // ~90ms por quadro
+const slimeFrames = [];
+for (let i = 0; i < SLIME_FRAME_COUNT; i++) {
+  const img = new Image();
+  img.src = 'assets/monsters/slimes/slime_green_frames/frame_' + String(i).padStart(2, '0') + '.webp';
+  slimeFrames.push(img);
+}
+
+// Slimes Coloridas — 66 frames com delay no nome (frame_XX_delay-0.04s.webp / 0.05s)
+// Os delays alternam: par=0.04s, ímpar=0.05s → FPS médio ~22 fps
+const COLORED_SLIME_FRAME_COUNT = 66;
+const COLORED_SLIME_FPS = 20; // ~50ms por quadro (média dos dois delays)
+
+// Gera array de nomes de frames com delay alternado
+function buildColoredFrameNames() {
+  const names = [];
+  for (let i = 0; i < COLORED_SLIME_FRAME_COUNT; i++) {
+    const delay = (i % 2 === 0) ? '0.04s' : '0.05s';
+    names.push('frame_' + String(i).padStart(2, '0') + '_delay-' + delay + '.webp');
+  }
+  return names;
+}
+const coloredFrameNames = buildColoredFrameNames();
+
+// Objeto central de frames: slimeColorFrames['blue'][idx] = HTMLImageElement
+const COLORED_SLIME_TYPES = ['blue', 'gray', 'purple', 'red'];
+const slimeColorFrames = {};
+COLORED_SLIME_TYPES.forEach(color => {
+  slimeColorFrames[color] = [];
+  coloredFrameNames.forEach(fname => {
+    const img = new Image();
+    img.src = 'assets/monsters/slimes/slime_' + color + '_frames/' + fname;
+    slimeColorFrames[color].push(img);
+  });
+});
+
+// Preload do frame especial "Goo Sombrio com Olhos Luminosos" (Forma Imortal da Slime Cinza)
+const gooSombrioImg = new Image();
+gooSombrioImg.src = 'assets/monsters/slimes/slime_gray_frames/shadow-goo.webp';
+const blueSlimeShieldImg = new Image();
+blueSlimeShieldImg.src = 'assets/projectiles/blue-slime-bubble-shield.webp';
+const kingSlimeShieldImg = new Image();
+kingSlimeShieldImg.src = 'assets/projectiles/king-slime-iridescent-shield.webp';
+
+// ══════════════════════════════════════════════════════════════
+//  PRELOAD: MAPA & APRESENTAÇÃO DO BOSS KING SLIME (15:00+)
+//  Mapa: Clareira Encantada na Floresta King Slime
+// ══════════════════════════════════════════════════════════════
+const kingSlimeBaseImg = new Image();
+kingSlimeBaseImg.src = 'assets/maps/king-slime-arena/night-base.webp';
+
+const kingSlimeOverlayImg = new Image();
+kingSlimeOverlayImg.src = 'assets/maps/king-slime-arena/night-overlay.webp';
+
+// 24 frames da cutscene de despertar do Rei Slime (1672x941)
+const KING_SLIME_INTRO_FRAME_COUNT = 24;
+const kingSlimeIntroFrames = [];
+for (let i = 1; i <= KING_SLIME_INTRO_FRAME_COUNT; i++) {
+  const img = new Image();
+  const numStr = String(i).padStart(2, '0');
+  img.src = `assets/maps/king-slime-arena/frame_${numStr}.webp`;
+  kingSlimeIntroFrames.push(img);
+}
+
+// 16 frames animados do mob King Slime (1024x1024)
+const KING_SLIME_MOB_FRAME_COUNT = 16;
+const kingSlimeMobFrames = [];
+for (let i = 0; i < KING_SLIME_MOB_FRAME_COUNT; i++) {
+  const img = new Image();
+  const numStr = String(i).padStart(2, '0');
+  img.src = `assets/monsters/slimes/slime_kingslime_frames/frame_${numStr}_delay-0.08s.webp`;
+  kingSlimeMobFrames.push(img);
+}
+
+// Variáveis de Estado do Boss King Slime (3 Fases)
+let bossPhaseActive = false;       // Ativo a partir dos 15 minutos (ou via teste)
+let bossIntroActive = false;       // Cutscene dos 24 frames em andamento
+let bossIntroTimer = 0;            // Cronômetro da apresentação
+const BOSS_INTRO_DURATION = 3.6;   // Duração da apresentação (2.8s animação + 0.8s pausa dramática)
+let kingSlime = null;              // Instância do Boss Rei Slime
+let screenShakeTimer = 0;          // Tempo restante do tremor de tela
+let screenShakeIntensity = 0;      // Força do tremor em pixels
+
+// Cores e utilitário de sprites das slimes
+const SLIME_TYPE_COLORS = {
+  normal: '#22c55e',
+  green: '#22c55e',
+  blue: '#38bdf8',
+  purple: '#a855f7',
+  red: '#ef4444',
+  gray: '#94a3b8'
+};
+
+function getSlimeSpriteFrame(type, animTimer) {
+  if (type === 'normal' || type === 'green') {
+    const idx = Math.floor(animTimer * SLIME_FPS) % SLIME_FRAME_COUNT;
+    return slimeFrames[idx];
+  }
+  if (COLORED_SLIME_TYPES.includes(type) && slimeColorFrames[type]) {
+    const idx = Math.floor(animTimer * COLORED_SLIME_FPS) % COLORED_SLIME_FRAME_COUNT;
+    return slimeColorFrames[type][idx];
+  }
+  return null;
+}
+
+// ── FASE 1: O ENIGMA REAL (Puzzle das 5 Slimes Coloridas) ──
+let bossPuzzleSlimes = [];         // Instâncias das 5 slimes que desfilam e se espalham
+let bossPuzzleSequence = [];       // Ordem sorteada das cores
+let bossPuzzleCurrentIdx = 0;      // Próxima cor a ser atingida pelo jogador
+let bossPuzzleState = 'none';      // 'none', 'march_intro', 'scatter', 'waiting_input', 'success_retreat', 'failed_retreat'
+let bossPuzzleTimer = 0;
+
+// ── FASE 2: INVASÃO SINISTRA (Limpeza de Arena) ──
+let bossPhase2IsVulnerable = false;
+let bossPhase2VulnerableTimer = 0;
+let bossPhase2WaveCount = 0;
+
+// ── FASE 3: FRENESI DO REI (Anel Orbital de Proteção) ──
+let bossRingSlimes = [];           // Slimes que orbitam o King Slime
+let bossRingAngle = 0;             // Ângulo de rotação da órbita
+let bossRingIsVulnerable = false;  // Quando todas as 5 do anel caem
+let bossRingVulnerableTimer = 0;
+
+// ══════════════════════════════════════════════════════════════
+//  ESTADO DO JOGADOR NO CENTRO, VIDA & RECURSO
+// ══════════════════════════════════════════════════════════════
+let mouse = { x: window.innerWidth / 2 + 100, y: window.innerHeight / 2 };
+let playerAngle = 0; // Ângulo 360 graus suave
+let targetAngle = 0;
+let recoil = 0; // Recuo visual do arco ao disparar
+let shootCooldown = 0;
+
+// Estado de Vida & Stamina/Recurso com Modificadores da Loja
+const upgrades = (bblSave && bblSave.upgrades) || {};
+
+// Modificadores de Upgrades comprados na Loja
+const permanentBonuses = BowPowerups.bonuses(bblSave);
+const chargedShotUnlocked = BowPowerups.level(bblSave,'charged_shot') > 0;
+const autoReloadUnlocked = BowPowerups.level(bblSave,'auto_reload') > 0;
+const dmgMultiplier = permanentBonuses.damage;
+const hpBonus = permanentBonuses.hp;
+const regenMultiplier = permanentBonuses.resource;
+const attackSpeedMultiplier = permanentBonuses.attackSpeed;
+const projectileSpeedMultiplier = permanentBonuses.projectileSpeed;
+
+const activeCfg = VOCATION_CONFIG[currentVocation];
+let basePlayerHp = Math.max(1,Math.round((activeCfg.maxHp + hpBonus) * runPact.hp));
+let maxPlayerHp = basePlayerHp;
+let currentHp = maxPlayerHp;
+let currentResource = activeCfg.maxResource;
+let reserveRecovering = false;
+let mustReleaseAttack = false;
+let chargeElapsed = null;
+let timeSinceLastShot = 999;
+let playerInvulnTimer = 0; // i-frames após sofrer dano
+let modifiers = RunModifiers.create(currentVocation,Math.random,survivalRun);
+const modifierDialog = document.getElementById('modifier-dialog');
+modifierDialog.addEventListener('cancel', event => event.preventDefault());
+let lastModifierHit = 0, lastResourceHit = -Infinity, lastResourceKill = -Infinity;
+let reserveSpent = false, reserveDepleted = false, freeShot = false, boostedShots = 0, fullShotReady = true;
+let vitalKills = 0, breathKills = 0;
+const rank = id => bossPhaseActive ? 0 : modifiers.rank(id);
+function reserveCapacity(cfg = activeCfg) {
+  const extra = cfg.maxResource * .20 * rank('M13');
+  return cfg.maxResource + (['Druid','Archer'].includes(currentVocation) ? Math.ceil(extra) : extra);
+}
+function shotCost(cfg = activeCfg) {
+  const discount = .08 * rank('M16');
+  return cfg.resourceCost * Math.max(.4, 1 - discount);
+}
+function resourceRecoveryDelay(cfg) {
+  return Math.max(.6,cfg.regenDelay * (1 - .15 * rank('M15')) /
+    (regenMultiplier * runPact.regen * (1 + .12 * rank('M14')) * (1 + .20 * rank('M23'))));
+}
+
+function recoverReserve(amount) {
+  const capacity = reserveCapacity();
+  currentResource = Math.min(capacity, currentResource + amount);
+  if (currentResource < capacity) return;
+  reserveRecovering = false;
+  if (!reserveSpent) return;
+  fullShotReady = true;
+  if (rank('M18')) boostedShots = 3;
+  if (rank('M19') && reserveDepleted) freeShot = true;
+  reserveSpent = reserveDepleted = false;
+}
+function updateCardProgress() {
+  const counter = document.getElementById('next-card-progress');
+  const hidden = trainingMode || egyptianMode || bossPhaseActive || isGameOver || !modifiers.milestone;
+  if (counter.hidden !== hidden) counter.hidden = hidden;
+  if (!counter.hidden) {
+    const value = Math.min(modifiers.kills,modifiers.milestone);
+    const text = value + '/' + modifiers.milestone;
+    const label = document.getElementById('card-progress-value');
+    if (label.textContent !== text) {
+      label.textContent = text;
+      const meter = document.getElementById('card-progress-meter');
+      meter.max = modifiers.milestone;
+      meter.value = value;
+    }
+  }
+}
+function recordModifierKill() {
+  modifiers.recordKill();
+  updateCardProgress();
+  if (rank('M17') && runTimer - lastResourceKill >= 1) {
+    recoverReserve(reserveCapacity() * .03 * rank('M17'));
+    lastResourceKill = runTimer;
+  }
+  if (rank('M28') && ++vitalKills % 8 === 0) currentHp = Math.min(maxPlayerHp,currentHp + rank('M28'));
+  if (rank('M29') && ++breathKills % 25 === 0) currentHp += (maxPlayerHp-currentHp) * .05 * rank('M29');
+}
+function acceptPact(card) {
+  const health=currentHp/maxPlayerHp,resource=currentResource/reserveCapacity(),previousSpeed=runPact.enemySpeed;
+  activePacts.push(card);
+  nextPactAt+=VocationPacts.interval;
+  applyRunPact(selectedRunPact.id);
+  basePlayerHp=Math.max(1,Math.round((activeCfg.maxHp+hpBonus)*runPact.hp));
+  maxPlayerHp=Math.max(1,Math.round(basePlayerHp*(1+.15*rank('M25'))));
+  currentHp=Math.max(1,maxPlayerHp*health);
+  currentResource=Math.min(reserveCapacity(),reserveCapacity()*resource);
+  for(const mob of monsters)mob.speed*=runPact.enemySpeed/previousSpeed;
+}
+function offerModifiers() {
+  const timedPact=survivalRun&&runTimer+1e-6>=nextPactAt;
+  const earlyPact=nextPactAt===VocationPacts.interval;
+  const oathOffer=timedPact?VocationPacts.offer(currentVocation,activePacts.map(card=>card.id),Math.random,earlyPact):[];
+  const choosingPact=oathOffer.length>0;
+  const offer=choosingPact?oathOffer:modifiers.next();
+  if (!offer.length) return false;
+  const options = document.getElementById('modifier-options');
+  const confirm = document.getElementById('modifier-confirm');
+  let selected = null;
+  confirm.disabled = true;
+  document.getElementById('modifier-title').textContent=choosingPact?'NOVO JURAMENTO':'CARTAS DA JORNADA';
+  document.getElementById('modifier-milestone').textContent=choosingPact?JourneyModes.format(nextPactAt):modifiers.milestone+' ABATES';
+  document.getElementById('modifier-description').textContent=choosingPact?(earlyPact?'Escolha um bônus sem penalidade.':'Escolha uma vantagem e aceite seu preço até o fim da jornada.'):'Escolha uma carta para fortalecer sua jornada.';
+  options.replaceChildren();
+  for (const card of offer) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'modifier-card';
+    button.dataset.modifierId = card.id;
+    button.setAttribute('aria-pressed','false');
+    const family = document.createElement('small');
+    family.textContent = choosingPact?'JURAMENTO':card.family.toUpperCase();
+    const name = document.createElement('strong');
+    name.textContent = card.name;
+    const description = document.createElement('span');
+    description.textContent = choosingPact?card.gain:card.description;
+    const level = document.createElement('b');
+    level.textContent = choosingPact?(card.loss||'SEM PENALIDADE'):'NÍVEL ' + (rank(card.id)+1) + ' / ' + card.max;
+    if(card.art) {
+      const art = document.createElement('img');
+      art.className = 'modifier-art';
+      art.alt = '';
+      art.decoding = 'async';
+      art.addEventListener('error',()=>{
+        art.remove();
+        button.classList.remove('has-art','has-oath-art');
+      },{once:true});
+      art.src = card.art;
+      button.classList.add('has-art');
+      if(choosingPact)button.classList.add('has-oath-art');
+      button.append(art);
+    }
+    const content = document.createElement('div');
+    content.className = 'modifier-content';
+    content.append(family,name,description,level);
+    button.append(content);
+    button.onclick = () => {
+      if (!modifierDialog.open) return;
+      selected = card;
+      for (const option of options.children) option.setAttribute('aria-pressed',String(option === button));
+      confirm.disabled = false;
+    };
+    options.append(button);
+  }
+  confirm.onclick = () => {
+    if(!modifierDialog.open||!selected)return;
+    if(choosingPact)acceptPact(selected);
+    else {
+    if(!modifiers.choose(selected.id))return;
+    const newHp = Math.round(basePlayerHp * (1 + .15 * rank('M25')));
+    currentHp += newHp - maxPlayerHp;
+    maxPlayerHp = newHp;
+    if (selected.id === 'M35') lastModifierHit = runTimer;
+    if (selected.id === 'M28') vitalKills = 0;
+    if (selected.id === 'M29') breathKills = 0;
+    }
+    modifierDialog.close();
+    isMouseDown = false;
+    isPaused = false;
+    updateHUD(activeCfg);
+    updateCardProgress();
+    BowAudio.play('upgrade');
+  };
+  spellAim?.cancel();
+  cancelChargedShot();
+  isMouseDown = false;
+  isPaused = true;
+  BowAudio.stopEffects();
+  modifierDialog.showModal();
+  document.getElementById('modifier-title').focus();
+  return true;
+}
+
+// Estado de Monstros (Slimes), Dano e Abates
+let monsters = [];
+let damageNumbers = [];
+let slimesDefeated = 0;
+let campaignGoldCents = 0;
+let runRewardSaved = false;
+let kingSlimeRewardPending = false;
+
+function runGold() {
+  const boss=kingSlimeRewardPending&&!trainingMode;
+  const survival=!trainingMode&&!ravenMode&&!egyptianMode?BowEconomy.survivalGold(runTimer):0;
+  return BowEconomy.campaignGold(campaignGoldCents,boss)+survival;
+}
+
+function bankRunReward() {
+  if(acceleratedRun||survivalRun)return;
+  const notice = document.getElementById('go-reward');
+  if (runRewardSaved) return;
+  const gold = runGold();
+  try {
+    const raw = JSON.parse(localStorage.getItem('bbl_demo_online_v1_save_v1') || 'null');
+    const save = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {gold:0,inventory:{},upgrades:{}};
+    save.gold = (Number.isFinite(save.gold) && save.gold >= 0 ? save.gold : 0) + gold;
+    save.inventory = save.inventory || {};
+    const bossOrbFits = BowInventory.canAdd(save,'slime_king_orb');
+    if (kingSlimeRewardPending && !trainingMode && bossOrbFits) save.inventory.slime_king_orb = (Number(save.inventory.slime_king_orb) || 0) + 1;
+    save.upgrades = save.upgrades || {};
+    localStorage.setItem('bbl_demo_online_v1_save_v1', JSON.stringify(save));
+    runRewardSaved = true;
+    if (notice) notice.textContent = `+${gold} OURO GUARDADO${kingSlimeRewardPending && !trainingMode ? (bossOrbFits ? " · +1 ORBE DO REI SLIME" : " · MOCHILA CHEIA: ORBE NÃO RECOLHIDO") : ""}`;
+  } catch (error) {
+    if (notice) notice.textContent = 'Não foi possível guardar o ouro. Verifique o armazenamento do navegador.';
+  }
+}
+let slimeSpawnTimer = 1.0; // Primeiro slime surge em 1.0s
+
+// ══════════════════════════════════════════════════════════════
+//  PROGRESSÃO DE FASES & BANNERS RETRÔ
+// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  TIMELINE DE PROGRESSÃO POR TEMPO (ESTILO VAMPIRE SURVIVORS)
+//  Run completa de 15 minutos até a aparição do Rei Slime
+// ══════════════════════════════════════════════════════════════
+let currentPhase = 1;
+let phaseKills = 0;
+
+// Configuração contínua de spawn e mecânicas por segundo de run
+// Forest encounters are introduced individually before joining the regular mix.
+const SLIME_TIMELINE = [
+  {at:0,   allowJump:false, spawnInterval:2.15, weights:{normal:75,mini:25}},
+  {at:20,  allowJump:false, spawnInterval:2.15, intro:'big', weights:{normal:64,mini:24,big:12}},
+  {at:40,  allowJump:true,  spawnInterval:2.25, weights:{normal:60,mini:25,big:15}},
+  {at:75,  allowJump:true,  spawnInterval:2.25, intro:'blue', weights:{normal:49,mini:23,big:10,blue:18}},
+  {at:115, allowJump:true,  spawnInterval:2.25, intro:'blue_large', weights:{normal:49,mini:23,big:10,blue:14,blue_large:4}},
+  {at:150, allowJump:true,  spawnInterval:2.15, intro:'purple', weights:{normal:38,mini:20,big:10,blue:16,blue_large:4,purple:12}},
+  {at:210, allowJump:true,  spawnInterval:2.15, intro:'purple_small', weights:{normal:38,mini:20,big:10,blue:16,blue_large:4,purple:9,purple_small:3}},
+  {at:240, allowJump:true,  spawnInterval:2.10, intro:'red', weights:{normal:29,mini:17,big:9,blue:15,blue_large:5,purple:13,purple_small:4,red:8}},
+  {at:330, allowJump:true,  spawnInterval:2.10, intro:'red_large', weights:{normal:29,mini:17,big:9,blue:15,blue_large:5,purple:13,purple_small:4,red:6,red_large:2}},
+  {at:360, allowJump:true,  spawnInterval:1.95, weights:{normal:24,mini:13,big:8,blue:19,blue_large:6,purple:14,purple_small:4,red:9,red_large:3}},
+  {at:420, allowJump:true,  spawnInterval:1.85, intro:'gray', weights:{normal:20,mini:12,big:8,blue:16,blue_large:6,purple:13,purple_small:5,red:9,red_large:3,gray:8}},
+  {at:540, allowJump:true,  spawnInterval:1.65, weights:{normal:15,mini:10,big:5,blue:14,blue_large:6,purple:13,purple_small:5,red:12,red_large:5,gray:15}},
+  {at:570, allowJump:true,  spawnInterval:1.65, intro:'prism', weights:{normal:12,mini:10,big:5,blue:14,blue_large:6,purple:13,purple_small:5,red:12,red_large:5,gray:15,prism:3}},
+  {at:840, allowJump:true,  spawnInterval:2.40, weights:{normal:7,mini:10,big:10,blue:14,blue_large:6,purple:13,purple_small:5,red:12,red_large:5,gray:15,prism:3}},
+  {at:900, allowJump:true,  spawnInterval:6.50, weights:{mini:50,normal:30,blue:20}}
+];
+const SLIME_SPAWN_RHYTHM = [.76,.76,1.36,1.12];
+const introducedSlimes = new Set();
+let slimeRhythmStep = 0;
+const PRISM_SPAWN_INTERVAL = 60;
+let lastPrismSpawn = -Infinity;
+
+function getTimelineConfig() {
+  if(egyptianMode)return {allowJump:false,spawnInterval:Infinity,weights:{}};
+  if(ravenMode)return RavenStage.timeline(runTimer);
+  return SLIME_TIMELINE.findLast(phase => runTimer >= phase.at) || SLIME_TIMELINE[0];
+}
+
+// Banners retrô de aviso quando novas mecânicas e períodos começam
+const TIMELINE_EVENTS = egyptianMode?[]:ravenMode?RavenStage.EVENTS:[
+  { t: 40,  title: 'GOSMAS SALTADORAS!', sub: 'Cuidado: as gosmas verdes começaram a saltar!' },
+  { t: 180, title: 'ENTARDECER', sub: 'A luz da clareira começa a mudar.' },
+  { t: 360, title: 'ANOITECER', sub: 'O crepúsculo avança sobre a floresta.' },
+  { t: 540, title: 'NOITE PROFUNDA', sub: 'A noite caiu sobre a clareira.' },
+  { t: 840, title: 'A TERRA TREME...', sub: 'A floresta silencia... O Rei Slime está despertando!' },
+  { t: 900, title: 'O REI SLIME DESPERTOU!', sub: 'O Monarca dos Slimes surge na clareira!' }
+];
+let triggeredTimelineEvents = new Set();
+
+// Objeto de compatibilidade com código legado
+const PHASE_CONFIG = {
+  1: {
+    name: 'CLAREIRA ENCANTADA',
+    title: 'CLAREIRA ENCANTADA',
+    subtitle: 'Sobreviva à horda e avance pelo dia até a noite!',
+    targetKills: 99999,
+    allowJump: false,
+    allowSplit: false,
+    spawnInterval: 2.8,
+    spawnWeights: { mini: 20, normal: 80, big: 0 }
+  }
+};
+const WAVE_CONFIG = PHASE_CONFIG;
+
+const VOCATION_BATTLE_CRIES = {
+  Knight: 'ESPADAS NELES!',
+  Sorcerer: 'VARINHAS NELES!',
+  Druid: 'ESPÍRITOS NELES!',
+  Archer: 'FLECHAS NELES!'
+};
+
+let countdownActive = false;
+let countdownTimer = 0;
+let countdownWave = 1;
+let lastBeepPlayed = -1;
+
+function playCountdownBeep(isFinal = false) {
+  BowAudio.play(isFinal ? 'ui_confirm' : 'tick');
+}
+
+function startWaveCountdown(waveNum) {
+  countdownActive = true;
+  countdownWave = waveNum;
+  countdownTimer = 3.9;
+  lastBeepPlayed = -1;
+  shootCooldown = 4.0;
+}
+
+let bannerTitle = '';
+let bannerSubtitle = '';
+let bannerTimer = 0;
+
+function triggerBanner(title, subtitle, duration = 3.2) {
+  bannerTitle = title;
+  bannerSubtitle = subtitle;
+  bannerTimer = duration;
+}
+
+function updatePhaseHUD() {
+  const el = document.getElementById('phase-text');
+  if (!el) return;
+  const timeFormatted=JourneyModes.format(journeyTime());
+
+  const label=pactRaid?`INVASÃO ${pactRaid.wave||1} · ${timeFormatted}`:acceleratedRun?`${journeyRate()}× · ${timeFormatted}`:timeFormatted;
+  if(el.textContent!==label)el.textContent=label;
+}
+
+function checkPhaseProgression() {
+  if(trainingMode)return;
+  if(egyptianMode||ravenMode)return;
+  updatePhaseHUD();
+  if(countdownActive)return;
+  if(survivalRun){
+    if(!pactRaid)beginPactRaids();
+  }else if(runTimer>=900&&!bossPhaseActive)triggerKingSlimeBoss();
+}
+
+let isGameOver = false;
+let runTimer = 0;
+let realRunTime = 0;
+let acceleratedResult = null;
+let acceleratedUnlocked = false;
+function journeyTime(){return acceleratedRun?realRunTime:runTimer;}
+function journeyRate(){return acceleratedRun&&!bossPhaseActive&&!trainingMode?2:1;}
+let pactRaid = null;
+let crowEncounter=CrowBonus.create();
+let frogEncounter = FrogBonus.create();
+let merchantEncounter=MerchantDiscovery.create();
+let bonsaiEncounter=BonsaiDiscovery.create();
+let gardenerDiscovered=BowDiscovery.gardenerUnlocked();
+let orbDrops=OrbDrops.create();
+let ravenState=RavenStage.create();
+let frogDiscoveryUnlocked = BowDiscovery.witchUnlocked();
+
+
+
+// O mesmo painel apresenta os dois resultados e restaura seu visual a cada partida.
+function setResultAppearance(victory) {
+  document.getElementById('game-over-screen').dataset.result=victory?'victory':'defeat';
+  const color = victory ? '#f5c842' : '#ef4444';
+  const title = document.getElementById('go-title');
+  title.textContent = victory ? (ravenMode?'PROTÓTIPO CONCLUÍDO':'VOCÊ VENCEU!') : 'DERROTA';
+  title.style.color = color;
+  title.style.textShadow = `0 0 15px ${color}`;
+  document.getElementById('go-subtitle').textContent = victory
+    ? (ravenMode?'TESTE DE 15 MINUTOS CONCLUÍDO · CHEFE EM DESENVOLVIMENTO':'O REI DOS SLIMES FOI DESTRONADO!')
+    : 'SUA DEFESA FOI SUPERADA PELA HORDA!';
+  const panel = document.getElementById('go-panel');
+  panel.style.borderColor = color;
+  panel.style.boxShadow = `0 0 35px ${color}80, inset 0 0 25px rgba(0,0,0,0.8)`;
+}
+
+// Tela de vitória — reutiliza o Game Over com mensagem diferente
+function savePactRaidRecord() {
+  if(!pactRaid)return;
+  const result=PactRaids.save(currentRegion.id,currentVocation,{
+    wave:pactRaid.completed,kills:slimesDefeated-pactRaid.killsAtStart,time:Math.floor(runTimer),pact:activePacts.map(card=>card.name).join(' / ')
+  });
+  pactRaid.record=result.record;
+  pactRaid.isBest ||= result.isBest;
+}
+
+function beginPactRaids() {
+  pactRaid=PactRaids.create(slimesDefeated);
+}
+
+function triggerVictory() {
+  if (isGameOver) return;
+  if(acceleratedRun&&!trainingMode){
+    acceleratedResult=JourneyModes.save(currentRegion.id,currentVocation,realRunTime);
+  }else if(!trainingMode&&!ravenMode&&!egyptianMode){
+    const alreadyAvailable=JourneyModes.available(currentRegion.id).includes('fast');
+    BowAchievements.fact('win_'+currentVocation);
+    BowAchievements.fact('king');
+    acceleratedUnlocked=!alreadyAvailable&&JourneyModes.available(currentRegion.id).includes('fast');
+  }
+  isGameOver = true;
+  savePlayedTime();
+  bankRunReward();
+  isMouseDown = false;
+  setResultAppearance(true);
+  document.getElementById('go-subtitle').textContent='DEMO CONCLUÍDA · OBRIGADO POR TESTAR A CLAREIRA ENCANTADA!';
+  BowAudio.setMode('result');
+  BowAudio.setAmbient(ravenMode?'mountain':'forest', .2);
+  BowAudio.play('victory');
+
+  const timeFormatted=JourneyModes.format(journeyTime());
+
+  const elPhase = document.getElementById('go-phase');
+  if (elPhase) elPhase.textContent = 'VITÓRIA!';
+  const elKills = document.getElementById('go-kills');
+  if (elKills) elKills.textContent = slimesDefeated;
+  const elVoc = document.getElementById('go-voc');
+  if (elVoc) elVoc.textContent = currentVocation.toUpperCase();
+  const elTime = document.getElementById('go-time');
+  if (elTime) elTime.textContent = timeFormatted;
+
+  const modal = document.getElementById('game-over-screen');
+  if (modal) {
+    modal.style.display = 'flex';
+    window.GameScreens?.showResult();
+  }
+}
+
+function triggerGameOver() {
+  if (isGameOver) return;
+  isGameOver = true;
+  savePlayedTime();
+  bankRunReward();
+  savePactRaidRecord();
+  isMouseDown = false;
+  setResultAppearance(false);
+  BowAudio.setMode('result');
+  BowAudio.setAmbient(ravenMode?'mountain':'forest', .18);
+  playGameOverSound();
+
+  const timeFormatted=JourneyModes.format(journeyTime());
+
+  const stageNames = ['MANHÃ', 'ENTARDECER', 'ANOITECER', 'NOITE PROFUNDA'];
+  const elPhase = document.getElementById('go-phase');
+  if (elPhase) elPhase.textContent = pactRaid?`INVASÕES CONCLUÍDAS: ${pactRaid.completed}`:ravenMode?MAP_STAGES[currentMapStage].label.toUpperCase():stageNames[currentMapStage] || 'NOITE';
+  const elKills = document.getElementById('go-kills');
+  if (elKills) elKills.textContent = slimesDefeated;
+  const elVoc = document.getElementById('go-voc');
+  if (elVoc) elVoc.textContent = currentVocation.toUpperCase();
+  const elTime = document.getElementById('go-time');
+  if (elTime) elTime.textContent = timeFormatted;
+
+  const modal = document.getElementById('game-over-screen');
+  if (modal) {
+    modal.style.display = 'flex';
+    window.GameScreens?.showResult();
+  }
+}
+
+function restartGame() {
+  savePlayedTime();
+  spellAim?.cancel();
+  window.GameScreens?.reset();isPaused=false;pendingWaveSpawns=[];
+  archerSpells.reset();
+  vocationSpells.reset();
+  BowAudio.setMode('game');
+  BowAudio.stopEffects();
+  BowAudio.scene(0,false,currentRegion.id);
+  const modal = document.getElementById('game-over-screen');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+
+  setResultAppearance(false);
+  pactRaid=null;
+  bossPhaseActive = false;
+  activePacts=selectedRunPact?[selectedRunPact]:[];
+  nextPactAt=VocationPacts.interval;
+  applyRunPact(selectedRunPact?.id);
+  basePlayerHp=Math.max(1,Math.round((activeCfg.maxHp+hpBonus)*runPact.hp));
+  bossIntroActive = false;
+  bossIntroTimer = 0;
+  kingSlime = null;
+  bossPuzzleSlimes = [];
+  bossPuzzleSequence = [];
+  bossPuzzleCurrentIdx = 0;
+  bossPuzzleState = 'none';
+  bossPuzzleTimer = 0;
+  bossPhase2IsVulnerable = false;
+  bossPhase2VulnerableTimer = 0;
+  bossPhase2WaveCount = 0;
+  bossRingSlimes = [];
+  bossRingAngle = 0;
+  bossRingIsVulnerable = false;
+  bossRingVulnerableTimer = 0;
+  screenShakeTimer = 0;
+  screenShakeIntensity = 0;
+  isMouseDown = false;
+  shootCooldown = 0;
+  recoil = 0;
+  timeSinceLastShot = 999;
+  playerInvulnTimer = 0;
+
+  const vocCfg = VOCATION_CONFIG[currentVocation];
+  modifierDialog.close();
+  modifiers = RunModifiers.create(currentVocation,Math.random,survivalRun);
+  maxPlayerHp = basePlayerHp;
+  lastModifierHit = vitalKills = breathKills = boostedShots = 0;
+  lastResourceHit = lastResourceKill = -Infinity;
+  reserveSpent = reserveDepleted = freeShot = false;
+  fullShotReady = true;
+  currentHp = maxPlayerHp;
+  pactReviveAvailable = !!runPact.revive;
+  currentResource = vocCfg.maxResource;
+  reserveRecovering = false;
+  chargeElapsed = null;
+  mustReleaseAttack = false;
+  currentPhase = 1;
+  phaseKills = 0;
+  slimesDefeated = 0;
+  campaignGoldCents = 0;
+  runRewardSaved = false;
+  kingSlimeRewardPending = false;
+  runTimer = 0;
+  realRunTime = 0;
+  acceleratedResult = null;
+  acceleratedUnlocked = false;
+  crowEncounter=CrowBonus.create();
+  frogEncounter = FrogBonus.create();
+  merchantEncounter=MerchantDiscovery.create();
+  bonsaiEncounter=BonsaiDiscovery.create();
+  gardenerDiscovered=BowDiscovery.gardenerUnlocked();
+  orbDrops=OrbDrops.create();
+  expansionScene=ExpansionContent.create();
+  ravenState=RavenStage.create();
+  frogDiscoveryUnlocked = BowDiscovery.witchUnlocked();
+  gameTimeSec = 0;
+  currentMapStage = 0;
+  currentMapIdx = 0;
+  mapTransitionAlpha = 0;
+  mapTransitionActive = false;
+  nextTransitionIdx = 0;
+  triggeredTimelineEvents.clear();
+  introducedSlimes.clear();
+  slimeRhythmStep = 0;
+  lastPrismSpawn = -Infinity;
+  monsters = [];
+  projectiles = [];
+  damageNumbers = [];
+  particles = [];
+  slimeSpawnTimer = 3.0;
+  isGameOver = false;
+
+  updateKillCounter();
+  updatePhaseHUD();
+  initHUD();
+  startWaveCountdown(1);
+}
+
+function updateKillCounter() {
+  const el = document.getElementById('kill-count');
+  if (el) el.textContent = slimesDefeated;
+}
+
+function initHUD() {
+  const cfg = VOCATION_CONFIG[currentVocation];
+  const hpText = document.getElementById('hp-text');
+  if (hpText) hpText.textContent = `${Math.round(currentHp)}/${maxPlayerHp}`;
+  
+  const resName = document.getElementById('resource-name');
+  if (resName) {
+    resName.textContent = cfg.resourceName;
+    resName.style.color = cfg.resourceColor;
+  }
+  const resBar = document.getElementById('resource-bar');
+  if (resBar) resBar.style.background = cfg.resourceColor;
+
+  const resText = document.getElementById('resource-text');
+  if (resText) resText.textContent = `${Math.round(currentResource)}/${Math.round(reserveCapacity(cfg))}`;
+
+  updatePhaseHUD();
+}
+initHUD();
+startWaveCountdown(1);
+
+// ══════════════════════════════════════════════════════════════
+//  SISTEMA DE SALTO TEMPORAL / TESTES RÁPIDOS (DEV TOOLS)
+// ══════════════════════════════════════════════════════════════
+function triggerResourceWarning() {
+  const resBox = document.getElementById('resource-box');
+  if (resBox) {
+    resBox.style.borderColor = '#ef4444';
+    resBox.style.boxShadow = '0 0 14px rgba(239, 68, 68, 0.7)';
+    setTimeout(() => {
+      resBox.style.borderColor = 'var(--border)';
+      resBox.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
+    }, 180);
+  }
+}
+
+const RESOURCE_MESSAGES = {
+  stamina: ['CANSADO','RECUPERANDO O FÔLEGO'],
+  mana: ['SEM MANA','CANALIZANDO MANA'],
+  seeds: ['SEM SEMENTES','CULTIVANDO SEMENTES'],
+  quiver: ['ALJAVA VAZIA','RECARREGANDO']
+};
+function updateHUD(cfg) {
+  const hpPercent = Math.max(0, Math.min(100, (currentHp / maxPlayerHp) * 100));
+  const resPercent = Math.max(0, Math.min(100, (currentResource / reserveCapacity(cfg)) * 100));
+
+  const hpBar = document.getElementById('hp-bar');
+  const hpText = document.getElementById('hp-text');
+  if (hpBar) hpBar.style.width = hpPercent + '%';
+  if (hpText) hpText.textContent = `${Math.round(currentHp)}/${maxPlayerHp}`;
+
+  const resBar = document.getElementById('resource-bar');
+  const resText = document.getElementById('resource-text');
+  const resName = document.getElementById('resource-name');
+  const status = document.getElementById('resource-recovery-status');
+  const hint = document.getElementById('resource-recovery-hint');
+  const meter = document.getElementById('resource-delay-meter');
+  const delay = resourceRecoveryDelay(cfg);
+  const waiting = reserveRecovering && timeSinceLastShot < delay;
+  const releaseToAttack = !reserveRecovering && mustReleaseAttack;
+  const needsReload = !reserveRecovering && currentResource < shotCost(cfg) && !freeShot;
+  const messages = RESOURCE_MESSAGES[cfg.resourceType];
+  if (resName) {
+    const charge = chargeElapsed === null ? null : chargedShotTier(chargeElapsed,cfg);
+    resName.textContent = chargeElapsed !== null
+      ? (charge ? 'CARGA PRONTA · ' + charge.cost : 'CARREGANDO · ' + chargeElapsed.toFixed(1) + 's')
+      : reserveRecovering ? messages[0] : cfg.resourceName;
+  }
+  status.hidden = !waiting && !releaseToAttack && !needsReload;
+  hint.textContent = waiting ? messages[1] : needsReload ? spellControls.reloadLabel.toUpperCase()+' PARA RECARREGAR' : releaseToAttack ? 'SOLTE PARA ATACAR' : '';
+  meter.hidden = !waiting;
+  if (!meter.hidden) meter.value = Math.min(1,timeSinceLastShot / delay);
+  if (resBar) resBar.style.width = resPercent + '%';
+  if (resText) {
+    if (cfg.resourceType === 'seeds' || cfg.resourceType === 'quiver') {
+      resText.textContent = `${Math.floor(currentResource)}/${Math.round(reserveCapacity(cfg))}`;
+    } else {
+      resText.textContent = `${Math.round(currentResource)}/${Math.round(reserveCapacity(cfg))}`;
+    }
+  }
+}
+
+let projectiles = [];
+let particles = [];
+
+// As habilidades só podem ser usadas após o ensinamento da bruxa.
+const spellTalents=BowTalents.effects(bblSave,currentVocation);
+const archerSpells=ArcherSpells.create(projectile=>projectiles.push(projectile),()=>Math.random(),spellTalents);
+const vocationSpells=VocationSpells.create(currentVocation,projectile=>projectiles.push(projectile),()=>Math.random(),spellTalents);
+const activeSpells=currentVocation==='Archer'?archerSpells:vocationSpells;
+const activeSpellCatalog=currentVocation==='Archer'?ArcherSpells.CATALOG:(VocationSpells.CATALOG[currentVocation]||[]).map(spell=>({...spell,...{name:BowTeachings.get(currentVocation,spell.id).name,icon:BowTeachings.get(currentVocation,spell.id).art}}));
+const spellImages=Object.fromEntries(ArcherSpells.CATALOG.map(spell=>{const image=new Image();if(spell.available!==false)image.src=spell.art;return [spell.id,image];}));
+const rainFrames=[1,2,3,4,5,7,8,9].map(i=>{const image=new Image();image.src='assets/projectiles/archer/arrow-rain/'+i+'.webp';return image;});
+for(const spell of activeSpellCatalog)if(currentVocation!=='Archer'&&spell.art)spellImages[spell.id]=VocationSpells.images(spell.id)[0];
+if(currentVocation==='Knight'){VocationSpells.images('fury_body');VocationSpells.images('fury_overlay');}
+const spellBar=document.getElementById('spell-bar');
+function learnedSpell(id){
+ try{return BowDiscovery.witchUnlocked()&&BowTeachings.get(currentVocation,id)?.available&&BowTeachings.known(JSON.parse(localStorage.getItem('bbl_demo_online_v1_save_v1')||'{}'),currentVocation,id);}catch{return false;}
+}
+spellBar.hidden=!activeSpellCatalog.some(spell=>learnedSpell(spell.id));
+spellBar.innerHTML=activeSpellCatalog.map(spell=>`<button type="button" ${learnedSpell(spell.id)?'':'hidden disabled'} class="spell-button" data-spell="${spell.id}" title="${spell.name} · ${spell.key} · ${spellTalents[spell.id]?.cooldown??spell.cooldown}s" aria-label="${spell.name}, tecla ${spell.key}"><img src="${spell.icon}" alt=""><kbd>${spell.key}</kbd><span class="spell-cooldown" aria-hidden="true"></span></button>`).join('');
+const spellControls = SpellControls.create(spellBar, activeSpellCatalog, learnedSpell);
+document.getElementById('pause-spells').onclick = () => {
+  if (!activeSpellCatalog.some(spell => learnedSpell(spell.id))) return;
+  spellAim?.cancel();
+  spellControls.show();
+};
+function canCastSpell(){return gameReady&&!isPaused&&!isGameOver&&!countdownActive&&!bossPhaseActive&&!bossIntroActive&&!audioSettingsOpen;}
+function targetableMonsters() {
+  return monsters.filter(m => m.grayForm !== 'translucent' && m.grayForm !== 'goo');
+}
+function castArcherSpell(id,point=null){
+ const targets=targetableMonsters();
+ const ok=activeSpells.cast(id,{ground:groundSurface,x:canvas.width/2,y:canvas.height/2,aimX:point?.x??mouse.x,aimY:point?.y??mouse.y,width:canvas.width,height:canvas.height,monsters:bossPhaseActive&&kingSlime&&!kingSlime.isDefeated?[...targets,kingSlime]:targets,allowed:canCastSpell()&&learnedSpell(id)});
+ if(ok){if(id==='fury'&&currentVocation==='Knight')currentResource=reserveCapacity();refreshSpellHUD();}
+ return ok;
+}
+function refreshSpellHUD(){
+ spellBar.hidden=bossPhaseActive||!activeSpellCatalog.some(spell=>learnedSpell(spell.id));
+ if(spellBar.hidden)return;
+ const times=activeSpells.cooldowns;
+ for(const button of spellBar.querySelectorAll('button')){
+  const learned=learnedSpell(button.dataset.spell);button.hidden=!learned;
+  const remaining=times[button.dataset.spell];
+  button.classList.toggle('cooling',remaining>0);
+  const orbit=button.dataset.spell==='guardians'?archerSpells.guard:['royal_protection','arcane_protection'].includes(button.dataset.spell)?vocationSpells.guard:null;
+  const arrowsLeft=orbit?orbit.arrows.filter(a=>!a.spent).length:0;
+  button.classList.toggle('spell-active',arrowsLeft>0);
+  const pending=activeSpellCatalog.find(spell=>spell.id===button.dataset.spell).available===false;
+  button.classList.toggle('pending',pending);
+  button.querySelector('.spell-cooldown').textContent=pending?'BREVE':arrowsLeft?arrowsLeft:remaining>0?Math.ceil(remaining):'';
+  button.disabled=!learned||pending||!canCastSpell()||remaining>0||(arrowsLeft>0&&!(GameMode.dev&&window.DevTools?.fastCooldown));
+ }
+}
+spellAim=SpellAim.create({
+ context:()=>({x:canvas.width/2,y:canvas.height/2,aimX:mouse.x,aimY:mouse.y,width:canvas.width,height:canvas.height,ground:groundSurface,talents:spellTalents}),
+ ready:id=>canCastSpell()&&learnedSpell(id)&&activeSpellCatalog.some(s=>s.id===id)&&(activeSpells.cooldowns[id]||0)<=0,
+ cast:(id,point)=>castArcherSpell(id,point)
+});
+let aimedPointer=null,lastAimPointerClick=-Infinity;
+spellBar.addEventListener('pointerdown',event=>{
+ const button=event.target.closest('[data-spell]');if(event.button!==0||!button||!VocationSpells.TARGETED[button.dataset.spell])return;
+ event.preventDefault();if(spellAim.begin(button.dataset.spell,'pointer')){aimedPointer=event.pointerId;isMouseDown=false;}lastAimPointerClick=performance.now();
+});
+spellBar.addEventListener('click',event=>{
+ const button=event.target.closest('[data-spell]');if(!button)return;
+ const id=button.dataset.spell;
+ if(VocationSpells.TARGETED[id]){if(performance.now()-lastAimPointerClick<400)return;spellAim.begin(id,'pointer');isMouseDown=false;return;}
+ spellAim.cancel();castArcherSpell(id);
+});
+function aimAtPointer(event) {
+ const rect=canvas.getBoundingClientRect();
+ if(rect.width>0&&rect.height>0){mouse.x=(event.clientX-rect.left)*canvas.width/rect.width;mouse.y=(event.clientY-rect.top)*canvas.height/rect.height;}
+}
+window.addEventListener('pointermove',event=>{
+ if(spellAim.active || chargeElapsed!==null)aimAtPointer(event);
+});
+window.addEventListener('pointerup',event=>{
+ if(event.button!==0||spellAim.active?.source!=='pointer')return;
+ if(aimedPointer!==null&&event.pointerId!==aimedPointer)return;
+ if(event.target.closest?.('#spell-bar')){spellAim.cancel();}else spellAim.release('pointer');
+ aimedPointer=null;lastAimPointerClick=performance.now();
+});
+window.addEventListener('pointercancel',()=>{spellAim.cancel();aimedPointer=null;});
+window.addEventListener('keydown',event=>{
+ if(spellControls.open||event.repeat||event.ctrlKey||event.altKey||event.metaKey||event.target.closest?.('input,select,textarea,[contenteditable=true]'))return;
+ if(event.code===spellControls.reloadCode){
+   if(event.defaultPrevented||event.target.closest?.('dialog,button,a')&&event.code==='Space')return;
+   if(gameReady&&!isGameOver&&!isPaused&&!audioSettingsOpen&&!countdownActive&&!modifierDialog.open){
+     event.preventDefault();
+     if(!reserveRecovering&&currentResource<reserveCapacity()){
+       cancelChargedShot();
+       spellAim.cancel();
+       startResourceRecovery(currentResource<shotCost());
+     }
+   }
+   return;
+ }
+ const spell=activeSpellCatalog.find(spell=>spellControls.codeFor(spell)===event.code);
+ if(spell){event.preventDefault();if(VocationSpells.TARGETED[spell.id]){if(spellAim.begin(spell.id,event.code))isMouseDown=false;}else{spellAim.cancel();castArcherSpell(spell.id);}}
+});
+window.addEventListener('keyup',event=>{if(spellAim.active?.source===event.code){event.preventDefault();spellAim.release(event.code);}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&spellAim.active){spellAim.cancel();event.preventDefault();event.stopImmediatePropagation();}},true);
+window.addEventListener('pointerdown',event=>{if(event.button===2&&spellAim.active){spellAim.cancel();event.preventDefault();event.stopImmediatePropagation();}},true);
+canvas.addEventListener('contextmenu',event=>event.preventDefault());
+function chargedShotTier(seconds,cfg = activeCfg) {
+  const full = reserveCapacity(cfg);
+  const half = ['seeds','quiver'].includes(cfg.resourceType) ? Math.ceil(full/2) : full/2;
+  if (seconds + 1e-9 >= 4 && currentResource >= full) return {cost:full,scale:1.55};
+  if (seconds + 1e-9 >= 2 && currentResource >= half) return {cost:half,scale:1.28};
+  return null;
+}
+function cancelChargedShot(){chargeElapsed=null;}
+canvas.addEventListener('pointerdown',event=>{
+  if (event.button !== 2 || !chargedShotUnlocked || !canCastSpell() || reserveRecovering || isMouseDown) return;
+  const cfg = activeCfg;
+  if (!chargedShotTier(2,cfg)) return;
+  event.preventDefault();
+  if (event.isTrusted) canvas.setPointerCapture(event.pointerId);
+  aimAtPointer(event);
+  chargeElapsed=0;
+});
+window.addEventListener('pointerup',event=>{
+  if(event.button!==2 || chargeElapsed===null)return;
+  const tier=chargedShotTier(chargeElapsed);
+  cancelChargedShot();
+  if(!tier || !canCastSpell() || reserveRecovering)return;
+  const cfg=activeCfg, x=canvas.width/2, y=canvas.height/2;
+  const angle=playerAngle;
+  const cos=Math.cos(angle), sin=Math.sin(angle);
+  const speed=cfg.shotSpeed * projectileSpeedMultiplier * (1 + .15 * rank('M03'));
+  const multiplier=tier.cost/cfg.resourceCost*(1 + .10 * rank('M01'));
+  currentResource=Math.max(0,currentResource-tier.cost);
+  reserveSpent=true;
+  timeSinceLastShot=0;
+  if(autoReloadUnlocked&&currentResource<shotCost(cfg))startResourceRecovery();
+  shootCooldown=Math.max(shootCooldown,1/(cfg.fireRate*attackSpeedMultiplier));
+  projectiles.push({x:x+cos*cfg.bowForwardOffset-sin*cfg.bowLateralOffset,
+    y:y+sin*cfg.bowForwardOffset+cos*cfg.bowLateralOffset,
+    vx:cos*speed,vy:sin*speed,angle,voc:currentVocation,life:3,trail:[],
+    modDamage:multiplier,chargeScale:tier.scale,hitRadius:14*tier.scale});
+  spawnMuzzleFlash(x,y,angle,cfg.color);
+  BowAudio.play('shot_'+currentVocation.toLowerCase());
+});
+window.addEventListener('pointercancel',cancelChargedShot);
+window.addEventListener('blur',cancelChargedShot);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelChargedShot();});
+window.addEventListener('bow-audio-settings',event=>{if(event.detail.open)cancelChargedShot();});
+
+window.addEventListener('blur',()=>{spellAim.cancel();aimedPointer=null;});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)spellAim.cancel();});
+window.addEventListener('bow-audio-settings',event=>{if(event.detail.open)spellAim.cancel();});
+function projectileDamage(p,cfg,x,y){
+ if(!p.spellId)return pactDamage((cfg.damage||12)*dmgMultiplier*vocationSpells.basicDamage*(p.modDamage||1),x,y);
+ return RunPacts.damage({...runPact,basicDamage:1},(cfg.damage||12)*dmgMultiplier*p.spellPower*vocationSpells.basicDamage,{hp:currentHp,maxHp:maxPlayerHp,distance:Math.hypot(x-canvas.width/2,y-canvas.height/2)});
+}
+function drawArcherEffects(){
+ if(currentVocation!=='Archer'){vocationSpells.draw(ctx,groundSurface,'back');return;}
+ const guard=archerSpells.guard;
+ ctx.save();
+ if(guard){
+  ctx.globalAlpha=Math.min(1,guard.elapsed/.2);
+  const image=spellImages.guardians;
+  for(const arrow of guard.arrows){
+   if(arrow.spent)continue;
+   const i=arrow.index;
+   const a=guard.angle+i*Math.PI*2/guard.arrows.length,px=cxForSpells()+Math.cos(a)*guard.radius,py=cyForSpells()+Math.sin(a)*guard.radius;
+   groundSurface.paint(ctx,()=>{ctx.save();ctx.translate(px,py+13);ctx.rotate(a+Math.PI/2);ctx.fillStyle='#0006';ctx.beginPath();ctx.ellipse(0,0,28,8,0,0,Math.PI*2);ctx.fill();ctx.restore();});
+   ctx.save();ctx.translate(px,py);ctx.rotate(a+Math.PI/2-Math.PI/4);
+   if(image.complete&&image.naturalWidth)ctx.drawImage(image,-44,-44,88,88);ctx.restore();
+  }
+ }
+ ctx.restore();
+ if(!ravenMode)drawArrowRain();
+}
+function drawArrowRain(){
+ const rain=archerSpells.rain;
+ if(rain){
+  for(const drop of rain.drops){
+   if(drop.age<0)continue;
+   const arrow=shotImages.Archer,projectileLength=(arrow.naturalWidth||2142)*VOCATION_CONFIG.Archer.shotScale;
+   const position=ArcherSpells.rainPosition(drop,canvas.height);
+   if(!position.landed){
+    if(!arrow.complete||!arrow.naturalWidth)continue;
+    const length=projectileLength*.8*drop.scale,thickness=length*arrow.naturalHeight/arrow.naturalWidth;
+    ctx.save();ctx.translate(position.x,position.y);ctx.rotate(Math.PI/2);
+    ctx.globalAlpha=Math.min(1,drop.age/.06);ctx.shadowColor='#f4e6a1';ctx.shadowBlur=5;
+    for(let trail=2;trail>=1;trail--){ctx.save();ctx.globalAlpha*=.09/trail;ctx.drawImage(arrow,-length*.97-trail*13,-thickness/2,length,thickness);ctx.restore();}
+    ctx.drawImage(arrow,-length*.97,-thickness/2,length,thickness);ctx.restore();
+   }else{
+    if(!groundSurface.contains(drop.x,drop.y)){
+     const fall=(drop.age-.43)/.3;if(fall>=1||!arrow.complete||!arrow.naturalWidth)continue;
+     const length=projectileLength*.8*drop.scale,thickness=length*arrow.naturalHeight/arrow.naturalWidth;
+     ctx.save();ctx.globalAlpha=1-fall;ctx.translate(drop.x,drop.y+fall*90);ctx.rotate(Math.PI/2);ctx.drawImage(arrow,-length*.97,-thickness/2,length,thickness);ctx.restore();continue;
+    }
+    const image=rainFrames[Math.min(rainFrames.length-1,4+Math.floor((drop.age-.43)*10))];
+    if(!image.complete||!image.naturalWidth)continue;
+    const h=projectileLength*.8*drop.scale,w=h*image.naturalWidth/image.naturalHeight;
+    // The impact point is on stone. The shaft stands above the floor and can overhang the edge.
+    ctx.save();ctx.globalAlpha=Math.max(0,Math.min(1,(2-drop.age)/.35));
+    ctx.drawImage(image,drop.x-w*.51,drop.y-h*.86,w,h);ctx.restore();
+   }
+  }
+ }
+}
+function cxForSpells(){return canvas.width/2;}function cyForSpells(){return canvas.height/2;}
+
+
+window.addEventListener('mousemove', e => {
+  if(e.target.closest?.('#spell-bar'))return;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width > 0 && rect.height > 0) {
+    mouse.x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+    mouse.y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+    if(e.target===canvas&&gameReady&&!isPaused&&!isGameOver&&!audioSettingsOpen&&!countdownActive){
+      const orbs=OrbDrops.collect(orbDrops,{x:mouse.x,y:mouse.y,save:key=>{
+        try{const save=JSON.parse(localStorage.getItem('bbl_demo_online_v1_save_v1')||'null')||{gold:0,inventory:{},upgrades:{}};
+          if(!BowInventory.canAdd(save,key))return 'full';
+          const quantity=BowTeachings.quantity(save,key);if(quantity>=Number.MAX_SAFE_INTEGER)return false;
+          save.inventory={...save.inventory,[key]:quantity+1};localStorage.setItem('bbl_demo_online_v1_save_v1',JSON.stringify(save));return true;
+        }catch{return false;}
+      }});
+      if(orbs.count)BowAudio.play('orb');
+      if(orbs.full&&(orbDrops.fullWarningAt===undefined||runTimer-orbDrops.fullWarningAt>=3)){orbDrops.fullWarningAt=runTimer;triggerBanner('MOCHILA CHEIA','Sem espaço para um novo tipo de item.',2);}
+      if(orbs.failed&&!orbDrops.saveWarning){orbDrops.saveWarning=true;triggerBanner('NÃO FOI POSSÍVEL GUARDAR','Tente recolher os orbs novamente.',3);}
+      if(!bossPhaseActive&&!bossIntroActive&&bonsaiEncounter.item){
+        const result=BonsaiDiscovery.collect(bonsaiEncounter,{x:mouse.x,y:mouse.y,unlock:BowDiscovery.unlockGardener});
+        if(result==='collected'){
+          gardenerDiscovered=true;
+          BowAudio.play('upgrade');
+          triggerBanner('JARDINEIRO DESCOBERTO','O Jardim dos Talentos abriu no acampamento.',4);
+        }else if(result==='storage'&&!bonsaiEncounter.saveWarning){
+          bonsaiEncounter.saveWarning=true;
+          triggerBanner('NÃO FOI POSSÍVEL GUARDAR','Tente recolher o bonsai novamente.',3);
+        }
+      }
+      const result=MerchantDiscovery.collect(merchantEncounter,{x:mouse.x,y:mouse.y,unlock:()=>BowDiscovery.unlockMerchant()});
+      if(result==='collected'){BowAudio.play('upgrade');triggerBanner('TENDA DO GUSTAV DESCOBERTA','Uma nova trilha surgiu no acampamento.',4);}
+      else if(result==='storage'&&!merchantEncounter.saveWarning){merchantEncounter.saveWarning=true;triggerBanner('NÃO FOI POSSÍVEL GUARDAR','Tente coletar a sacolinha novamente.',3);}
+    }
+  }
+});
+
+let isMouseDown = false;
+window.addEventListener('mousedown', e => {
+  if (e.button===0&&!spellAim.active&&!(e.target instanceof Element && e.target.closest('button,input,select,dialog')) && gameReady && !audioSettingsOpen && !isPaused && !isGameOver && !countdownActive) {
+    isMouseDown = true;
+    tryShoot();
+  }
+});
+function releaseBasicAttack() {
+  isMouseDown = false;
+  mustReleaseAttack = false;
+}
+window.addEventListener('blur',releaseBasicAttack);
+window.addEventListener('mouseup',event => {
+  if (event.button===0) releaseBasicAttack();
+});
+
+// ══════════════════════════════════════════════════════════════
+//  SISTEMA DE DISPARO BASEADO NO LADO DO ARCO & GASTO DE RECURSO
+// ══════════════════════════════════════════════════════════════
+function startResourceRecovery(depleted = true) {
+  if(depleted)currentResource=0;
+  reserveDepleted=depleted;
+  reserveRecovering=true;
+  mustReleaseAttack=isMouseDown;
+  timeSinceLastShot=0;
+}
+function tryShoot() {
+  if (chargeElapsed !== null || !gameReady || isGameOver || isPaused || audioSettingsOpen || countdownActive || shootCooldown > 0) return;
+
+  const cfg = VOCATION_CONFIG[currentVocation];
+  const infiniteStamina=currentVocation==='Knight'&&vocationSpells.berserk;
+  const capacity = reserveCapacity(cfg);
+  const cost = shotCost(cfg);
+  if (infiniteStamina) {
+    currentResource = capacity;
+    reserveRecovering = false;
+  }
+  if (reserveRecovering || (mustReleaseAttack && !infiniteStamina)) return;
+
+  // 1. Verificação de Recurso / Stamina
+  if (!infiniteStamina&&!freeShot&&currentResource < cost) {
+    playEmptySound();
+    triggerResourceWarning();
+    shootCooldown = 0.22; // Debounce suave para arco sem munição/vigor
+    return;
+  }
+
+  // 2. Consumir Recurso e aplicar Cadência da Vocação
+  let shotDamage = 1 + .10 * rank('M01');
+  if (currentResource >= capacity && fullShotReady) {
+    shotDamage += .25 * rank('M08');
+    fullShotReady = false;
+  }
+  if (!infiniteStamina) {
+    if (freeShot) freeShot = false;
+    else {
+      currentResource = Math.max(0, currentResource - cost);
+      reserveSpent = true;
+      if (currentResource < shotCost(cfg)) {
+        if (!reserveDepleted) shotDamage += .35 * rank('M09');
+        if(autoReloadUnlocked)startResourceRecovery();
+      }
+    }
+  }
+  const shotSpeed = cfg.shotSpeed * projectileSpeedMultiplier *
+    (1 + .15 * rank('M03') + (boostedShots > 0 ? .20 * rank('M18') : 0));
+  boostedShots = Math.max(0,boostedShots-1);
+  const firstProjectile = projectiles.length;
+  timeSinceLastShot = 0;
+  shootCooldown = 1 / (cfg.fireRate * attackSpeedMultiplier * vocationSpells.attackRate * (1 + .08 * rank('M02')));
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Direção frontal (onde o arqueiro mira) e lateral perpendicular
+  const cos = Math.cos(playerAngle);
+  const sin = Math.sin(playerAngle);
+  const perpX = -sin;
+  const perpY = cos;
+
+  // Ponto de saída baseado na ponta norte do arco à frente do personagem
+  const spawnX = cx + cos * cfg.bowForwardOffset + perpX * cfg.bowLateralOffset;
+  const spawnY = cy + sin * cfg.bowForwardOffset + perpY * cfg.bowLateralOffset;
+
+  if(currentVocation==='Knight'&&vocationSpells.berserk){
+    const volley=VocationSpells.demonicVolley({x:cx,y:cy,angle:playerAngle,speed:shotSpeed,pierce:runPact.pierce,extraShot:runPact.extraShot});
+    projectiles.push(...volley);
+  }else{
+  // O projétil viaja diretamente na direção que o arqueiro está apontando
+  projectiles.push({
+    x: spawnX,
+    y: spawnY,
+    vx: cos * shotSpeed,
+    vy: sin * shotSpeed,
+    angle: playerAngle,
+    voc: currentVocation,
+    life: 3.0,
+    trail: [],
+    berserk:vocationSpells.berserk,
+    pierceLeft: runPact.pierce
+  });
+  if (runPact.extraShot) {
+    const original = projectiles[projectiles.length-1];
+    const speed = shotSpeed;
+    const spread = .10;
+    original.angle = playerAngle-spread;
+    original.vx = Math.cos(original.angle)*speed;
+    original.vy = Math.sin(original.angle)*speed;
+    const angle = playerAngle+spread;
+    projectiles.push({...original,angle,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,trail:[]});
+  }
+
+  }
+
+  for (let i=firstProjectile;i<projectiles.length;i++) {
+    projectiles[i].modDamage = shotDamage;
+  }
+
+  // Efeito de recuo físico do corpo do personagem
+  recoil = cfg.recoilAmount;
+
+  // Faíscas/Partículas de disparo saindo do arco
+  spawnMuzzleFlash(spawnX, spawnY, playerAngle, cfg.color);
+
+  // Som temático da vocação
+  playShotSound(currentVocation);
+}
+
+function spawnMuzzleFlash(x, y, angle, color) {
+  for (let i = 0; i < 8; i++) {
+    const spread = (Math.random() - 0.5) * 0.8;
+    const spd = 60 + Math.random() * 120;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle + spread) * spd,
+      vy: Math.sin(angle + spread) * spd,
+      color: color,
+      life: 0.22,
+      maxLife: 0.22,
+      size: 3 + Math.random() * 3
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CONFIGURAÇÃO DOS TIPOS DE SLIME (HIERARQUIA DE TAMANHOS)
+// ══════════════════════════════════════════════════════════════
+const SLIME_TYPES = {
+  mini: {
+    name: 'Mini Slime',
+    size: 52,
+    radius: 18,
+    hp: 14,
+    speed: 108,
+    touchDamage: 8,
+    knockbackMult: 1.3,
+    shadowRx: 17,
+    shadowRy: 6,
+    shadowY: 15,
+    barW: 28,
+    barY: -32,
+    jumpCooldownMin: 3.0,   // Aumentado de 2.0 — pula menos frequente
+    jumpCooldownMax: 5.0,   // Aumentado de 3.5
+    jumpDuration: 0.72,
+    jumpSpeedMult: 1.75,
+    jumpScaleBonus: 0.38
+  },
+  normal: {
+    name: 'Slime Verde',
+    size: 84,
+    radius: 26,
+    hp: 32,
+    speed: 68,
+    touchDamage: 12,
+    knockbackMult: 1.0,
+    shadowRx: 28,
+    shadowRy: 10,
+    shadowY: 24,
+    barW: 44,
+    barY: -48,
+    jumpCooldownMin: 4.0,   // Aumentado de 3.0 — pula bem menos
+    jumpCooldownMax: 6.5,   // Aumentado de 4.8
+    jumpDuration: 0.88,
+    jumpSpeedMult: 1.6,
+    jumpScaleBonus: 0.45
+  },
+  big: {
+    name: 'Slime Brutamontes',
+    size: 132,
+    radius: 42,
+    hp: 96,
+    speed: 40,
+    touchDamage: 22,
+    knockbackMult: 0.35,
+    shadowRx: 46,
+    shadowRy: 16,
+    shadowY: 38,
+    barW: 66,
+    barY: -74,
+    jumpCooldownMin: 6.0,
+    jumpCooldownMax: 9.0,
+    jumpDuration: 1.10,
+    jumpSpeedMult: 1.35,
+    jumpScaleBonus: 0.52
+  },
+
+  // ── SLIME AZUL: Escudo protetor ──
+  blue: {
+    name: 'Slime Azul',
+    color: '#38bdf8',
+    size: 90,
+    radius: 28,
+    hp: 38,
+    speed: 72,
+    touchDamage: 13,
+    knockbackMult: 0.9,
+    shadowRx: 30,
+    shadowRy: 11,
+    shadowY: 26,
+    barW: 48,
+    barY: -52,
+    hasShield: true,        // começa com cúpula de escudo protetor ativa
+
+
+    jumpCooldownMin: 4.5,
+    jumpCooldownMax: 7.0,
+    jumpDuration: 0.90,
+    jumpSpeedMult: 1.55,
+    jumpScaleBonus: 0.42
+  },
+
+  // ── SLIME ROXA: Dash lateral — desvia ativamente de flechas aproximando ──
+  purple: {
+    name: 'Slime Roxa',
+    color: '#a855f7',
+    size: 88,
+    radius: 27,
+    hp: 40,
+    speed: 86,
+    touchDamage: 16,
+    knockbackMult: 0.9,
+    shadowRx: 29,
+    shadowRy: 10,
+    shadowY: 25,
+    barW: 46,
+    barY: -50,
+    canDash: true,          // possui dash lateral
+    dashCooldownMin: 1.8,
+    dashCooldownMax: 3.2,
+    dashDuration: 0.28,     // duração do dash (segundos)
+    dashSpeed: 520,         // velocidade durante o dash (~145px de deslocamento rápido)
+    jumpCooldownMin: 5.0,
+    jumpCooldownMax: 8.0,
+    jumpDuration: 0.85,
+    jumpSpeedMult: 1.5,
+    jumpScaleBonus: 0.40
+  },
+
+  // ── SLIME VERMELHA: Modo Fúria — 1º tiro 0 dano + alta velocidade, 2º tiro dano normal ──
+  red: {
+    name: 'Slime Vermelha',
+    color: '#ef4444',
+    size: 92,
+    radius: 29,
+    hp: 50,
+    speed: 76,
+    touchDamage: 19,
+    knockbackMult: 0.85,
+    shadowRx: 31,
+    shadowRy: 11,
+    shadowY: 27,
+    barW: 50,
+    barY: -54,
+    hasFury: true,          // ativa Modo Fúria no 1º impacto
+    furySpeedMult: 1.75,    // acelera +75% quando enfurecida
+    jumpCooldownMin: 3.5,
+    jumpCooldownMax: 6.0,
+    jumpDuration: 0.80,
+    jumpSpeedMult: 1.65,
+    jumpScaleBonus: 0.44
+  },
+
+  // Slime cinza: vulnerável, preta imortal, translúcida e intangível.
+  gray: {
+    name: 'Slime Cinza',
+    color: '#94a3b8',
+    size: 92,
+    radius: 28,
+    hp: 44,
+    speed: 66,
+    touchDamage: 17,
+    knockbackMult: 0.90,
+    shadowRx: 29,
+    shadowRy: 10,
+    shadowY: 24,
+    barW: 46,
+    barY: -50,
+    gooDuration: 2.5,        // tempo na forma de Goo Sombrio com Olhos Luminosos (imortal)
+    solidDuration: 1,
+    translucentDuration: 1.1,
+    jumpCooldownMin: 5.5,
+    jumpCooldownMax: 8.5,
+    jumpDuration: 0.92,
+    jumpSpeedMult: 1.5,
+    jumpScaleBonus: 0.38
+  }
+};
+
+// Size variants inherit their color's sprites, drops and combat rules.
+Object.assign(SLIME_TYPES,{
+  blue_large:{
+    ...SLIME_TYPES.blue,baseType:'blue',name:'Slime Azul Grande',
+    size:122,radius:37,hp:52,speed:54,shadowRx:40,shadowRy:15,shadowY:34,barW:60,barY:-70
+  },
+  purple_small:{
+    ...SLIME_TYPES.purple,baseType:'purple',name:'Slime Roxa Pequena',
+    size:65,radius:19,hp:25,speed:85,touchDamage:14,dashDuration:.18,dashSpeed:520,
+    shadowRx:21,shadowRy:8,shadowY:18,barW:35,barY:-37
+  },
+  red_large:{
+    ...SLIME_TYPES.red,baseType:'red',name:'Slime Vermelha Grande',
+    size:124,radius:39,hp:68,speed:62,furySpeedMult:2.05,furyWindup:.45,
+    shadowRx:42,shadowRy:15,shadowY:35,barW:61,barY:-72
+  },
+  prism:{
+    ...SLIME_TYPES.normal,baseType:'normal',name:'Slime Prismática',hasShield:true,furySpeedMult:1.75,
+    size:103,radius:32,hp:66,touchDamage:18,shadowRx:34,shadowRy:13,shadowY:29,barW:53,barY:-58
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+//  SPAWN & PARTÍCULAS DO SLIME VERDE
+// ══════════════════════════════════════════════════════════════
+const PRISM_COLORS = ['normal','blue','purple','red','gray'];
+const PRISM_COLOR_FRAME = .125;
+
+function slimeBehavior(monster) {
+  return SLIME_TYPES[monster.variant || monster.type] || SLIME_TYPES.normal;
+}
+
+function advancePrismDefense(monster,dt) {
+  if (!monster.furyActive) return;
+  monster.prismDefenseTimer -= dt;
+  if (monster.prismDefenseTimer > 0) return;
+
+  if (monster.grayForm === 'goo') {
+    monster.grayForm = 'translucent';
+    monster.prismDefenseTimer = 1.1;
+  } else if (monster.grayForm === 'translucent') {
+    monster.grayForm = null;
+    monster.prismDefenseTimer = 2.6 + Math.random()*1.6;
+  } else if (Math.random() < .45) {
+    monster.grayForm = 'goo';
+    monster.prismDefenseTimer = 1.25;
+    monster.isJumping = monster.isDashing = false;
+    monster.jumpZ = monster.rootTimer = monster.vortexTimer = 0;
+  } else {
+    monster.prismDefenseTimer = 2.6 + Math.random()*1.6;
+  }
+}
+
+function advancePrismColor(monster,dt) {
+  monster.prismColorTimer -= dt;
+  while (monster.prismColorTimer <= 0) {
+    const colors = PRISM_COLORS.filter(color => color !== monster.prismColor);
+    monster.prismColor = colors[Math.floor(Math.random()*colors.length)];
+    monster.prismColorTimer += PRISM_COLOR_FRAME;
+  }
+}
+
+function spawnSlime(typeKey, forcedX, forcedY) {
+  if(egyptianMode)return;
+  if(ravenMode){if(monsters.length<36)monsters.push(RavenStage.spawn(typeKey?.replace('raven_','')||RavenStage.choose(runTimer),canvas.width,canvas.height,Math.random,forcedX,forcedY));return;}
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  let sx = 0, sy = 0;
+  if (forcedX !== undefined && forcedY !== undefined) {
+    sx = forcedX;
+    sy = forcedY;
+  } else {
+    const edge = Math.floor(Math.random() * 4); // 0=topo, 1=direita, 2=baixo, 3=esquerda
+    const margin = 60;
+
+    if (edge === 0) {
+      sx = Math.random() * w;
+      sy = -margin;
+    } else if (edge === 1) {
+      sx = w + margin;
+      sy = Math.random() * h;
+    } else if (edge === 2) {
+      sx = Math.random() * w;
+      sy = h + margin;
+    } else {
+      sx = -margin;
+      sy = Math.random() * h;
+    }
+  }
+
+  // Sorteio ponderado baseado no tempo de jogo (Timeline)
+  if (!typeKey) {
+    const timeline = getTimelineConfig();
+    let weights = timeline.weights || { normal: 80, mini: 20 };
+    if (weights.prism && (runTimer-lastPrismSpawn < PRISM_SPAWN_INTERVAL || monsters.some(m => m.variant === 'prism'))) {
+      weights = {...weights,normal:weights.normal + weights.prism,prism:0};
+    }
+    let total = 0;
+    for (const k in weights) total += weights[k];
+    let roll = Math.random() * total;
+    for (const k in weights) {
+      if (roll < weights[k]) {
+        typeKey = k;
+        break;
+      }
+      roll -= weights[k];
+    }
+    if (!typeKey) typeKey = 'normal';
+  }
+
+  const def = SLIME_TYPES[typeKey] || SLIME_TYPES.normal;
+  if (typeKey === 'prism' && !trainingMode) lastPrismSpawn = runTimer;
+  const toCx = cx - sx;
+  const toCy = cy - sy;
+  const initialAngle = Math.atan2(toCy, toCx) - Math.PI / 2;
+
+  monsters.push({
+    type: def.baseType || typeKey,
+    variant: def.baseType ? typeKey : null,
+    ...(typeKey === 'prism' ? {prismDefenseTimer:0,prismColor:'normal',prismColorTimer:0} : {}),
+    x: sx,
+    y: sy,
+    hp: def.hp,
+    maxHp: def.hp,
+    speed: def.speed * runPact.enemySpeed,
+    radius: def.radius,
+    size: def.size,
+    touchDamage: def.touchDamage,
+    knockbackMult: def.knockbackMult,
+    shadowRx: def.shadowRx,
+    shadowRy: def.shadowRy,
+    shadowY: def.shadowY,
+    barW: def.barW,
+    barY: def.barY,
+    isRetreating: false,
+    retreatTimer: 0,
+    isJumping: false,
+    jumpTimer: 0,
+    jumpDuration: def.jumpDuration || 0.88,
+    jumpZ: 0,
+    jumpSpeedMult: def.jumpSpeedMult || 1.6,
+    jumpScaleBonus: def.jumpScaleBonus || 0.45,
+    jumpCooldown: typeKey === 'prism' ? .6 : (def.jumpCooldownMin || 2.5) + Math.random() * ((def.jumpCooldownMax || 4.5) - (def.jumpCooldownMin || 2.5)),
+    squishTimer: 0,
+    hitFlash: 0,
+    animTimer: Math.random() * 2,
+    angle: initialAngle,
+
+    // ── Mecânica Blue: Escudo protetor ──
+    shielded: !!def.hasShield,
+
+
+
+    // ── Mecânica Purple: Dash lateral ──
+    canDash: !!def.canDash,
+    dashCooldown: def.canDash ? ((def.dashCooldownMin || 1.8) + Math.random() * ((def.dashCooldownMax || 3.2) - (def.dashCooldownMin || 1.8))) : 0,
+    isDashing: false,
+    dashTimer: 0,
+    dashDuration: def.dashDuration || 0.28,
+    dashSpeed: def.dashSpeed || 520,
+    dashVx: 0,
+    dashVy: 0,
+
+    // ── Mecânica Red: Modo Fúria ──
+    hasFury: !!def.hasFury,
+    furyActive: false,
+    furyWindup: 0,
+
+    // ── Mecânica Gray: Goo Sombrio (Imortal & Parada) ↔ Translúcida (Vulnerável & Avançando) ──
+    // Sempre nasce translúcida para entrar no mapa caminhando em direção ao herói antes de pausar em Goo
+    grayForm: typeKey === 'gray' ? 'solid' : null,
+    grayTimer: typeKey === 'gray' ? def.solidDuration : 0,
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GATILHO & APRESENTAÇÃO DO BOSS: REI DOS SLIMES (KING SLIME)
+// ══════════════════════════════════════════════════════════════
+function triggerKingSlimeBoss(skipIntro = false, targetPhase = 1) {
+  if(ravenMode||egyptianMode||survivalRun)return;
+  if (!bossPhaseActive) {
+    const lifeFraction = currentHp/maxPlayerHp;
+    const resourceFraction = currentResource/reserveCapacity();
+    bossPhaseActive = true;
+    applyRunPact(null);
+    maxPlayerHp = Math.max(1,Math.round(activeCfg.maxHp+hpBonus));
+    currentHp = currentHp > 0 ? Math.max(1,Math.min(maxPlayerHp,maxPlayerHp*lifeFraction)) : 0;
+    currentResource = Math.min(reserveCapacity(),reserveCapacity()*resourceFraction);
+    pactReviveAvailable = false;
+    boostedShots = 0;
+    freeShot = reserveSpent = reserveDepleted = false;
+    spellAim?.cancel();
+    cancelChargedShot();
+    archerSpells.reset();
+    vocationSpells.reset();
+    BowAudio.stopEffects();
+    refreshSpellHUD();
+    updateHUD(activeCfg);
+  }
+  if(!acceleratedRun&&!trainingMode&&!skipIntro)BowAchievements.fact('king_seen');
+  BowAudio.play('boss_intro');
+  BowAudio.setAmbient('forest', .3);
+  bossPhaseActive = true;
+  currentMapStage = 3; // base da noite
+  mapTransitionActive = false;
+  runTimer = Math.max(runTimer, 900);
+
+  // Dissipa todas as slimes comuns da clareira com explosões místicas
+  for (const m of monsters) {
+    spawnSlimeDeathExplosion(m.x, m.y, m.radius || 24);
+  }
+  monsters = [];
+  projectiles = [];
+  damageNumbers = [];
+  bossPuzzleSlimes = [];
+  bossRingSlimes = [];
+
+  if (skipIntro) {
+    bossIntroActive = false;
+    bossIntroTimer = BOSS_INTRO_DURATION;
+    spawnKingSlime(targetPhase);
+  } else {
+    bossIntroActive = true;
+    bossIntroTimer = 0;
+    screenShakeTimer = BOSS_INTRO_DURATION;
+    screenShakeIntensity = 7;
+    triggerBanner('O REI DOS SLIMES SURGE!', 'PACTOS, CARTAS E MAGIAS SUSPENSOS NESTE COMBATE.', 4.0);
+    playSlimeSplashSound();
+  }
+  updatePhaseHUD();
+}
+
+function spawnKingSlime(initialPhase = 1) {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  let startHp = 1500;
+  if (initialPhase === 2) startHp = 999;
+  else if (initialPhase === 3) startHp = 499;
+
+  // Posiciona o King Slime bem no topo da tela para não ficar colado no jogador
+  const bossStartY = Math.max(105, Math.floor(cy - 330));
+
+  kingSlime = {
+    name: 'Rei Slime',
+    x: cx,
+    y: bossStartY,
+    startX: cx,
+    startY: bossStartY,
+    hp: startHp,
+    maxHp: 1500,
+    size: 205, // Tamanho gigante e imponente
+    radius: 70,
+    speed: 25, // Marcha pesada e tensa
+    touchDamage: 32,
+    knockbackMult: 0.05, // Praticamente imune a recuo
+    shadowRx: 85,
+    shadowRy: 28,
+    shadowY: 62,
+    animTimer: 0,
+    hitFlash: 0,
+    isJumping: false,
+    jumpTimer: 0,
+    jumpDuration: 1.15,
+    jumpZ: 0,
+    jumpCooldown: 4.5,
+    angle: 0,
+    isDefeated: false,
+    defeatTimer: 0,
+    phase: initialPhase,
+    isVulnerable: false,
+    vulnerableTimer: 0,
+    vulnerableMult: 1.0,
+    orbitAngle: 0
+  };
+
+  screenShakeTimer = 0.8;
+  screenShakeIntensity = 10;
+  spawnSlimeSplashParticles(kingSlime.x, kingSlime.y, 80);
+  playSlimeDeathSound();
+
+  if (initialPhase === 1) {
+    startBossPhase1Puzzle();
+  } else if (initialPhase === 2) {
+    startBossPhase2();
+  } else {
+    startBossPhase3();
+  }
+}
+
+// Distância de um ponto (px, py) até um segmento de reta [(ax, ay), (bx, by)]
+function distPointToSegment(px, py, ax, ay, bx, by) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const abLenSq = abx * abx + aby * aby;
+  if (abLenSq === 0) return Math.hypot(px - ax, py - ay);
+  const apx = px - ax;
+  const apy = py - ay;
+  const t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq));
+  const projX = ax + t * abx;
+  const projY = ay + t * aby;
+  return Math.hypot(px - projX, py - projY);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GERADOR DE POSIÇÕES DE SCATTER DO PUZZLE (FASE 1)
+//  Gera posições aleatórias no mapa garantindo que:
+//  1. NÃO fiquem atrás do King Slime (Y >= bossStartY + 65)
+//  2. NÃO fiquem no corredor vertical |   | onde o boss anda/fica
+//  3. NÃO fiquem coladas no jogador (dist >= 115)
+//  4. NENHUMA SLIME fique atrás de outra na linha de tiro do jogador!
+//     (Linha de tiro 100% limpa e direta para cada slime da arena)
+// ══════════════════════════════════════════════════════════════
+function getValidPuzzleScatterPositions(count) {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const bStartY = kingSlime ? kingSlime.startY : Math.max(105, Math.floor(cy - 330));
+  const minMarginX = 80;
+  const maxMarginX = canvas.width - 80;
+  const minMarginY = bStartY + 65; // NUNCA atrás do boss
+  const maxMarginY = canvas.height - 85;
+
+  const positions = [];
+  const maxAttempts = 800;
+
+  for (let i = 0; i < count; i++) {
+    let bestPos = null;
+    let found = false;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const rx = minMarginX + Math.random() * (maxMarginX - minMarginX);
+      const ry = minMarginY + Math.random() * (maxMarginY - minMarginY);
+
+      // 1. Distância mínima do jogador no centro (não cair em cima do herói)
+      const distHero = Math.hypot(rx - cx, ry - cy);
+      if (distHero < 115) continue;
+
+      // 2. Não pode estar atrás da linha do boss
+      if (ry < bStartY + 65) continue;
+
+      // 3. Checagem do corredor vertical |   | onde o boss anda/fica
+      // Se ry < cy (acima do jogador), o King Slime não pode obstruir a linha de tiro
+      let blockedByBoss = false;
+      if (ry < cy) {
+        if (Math.abs(rx - cx) < 115) {
+          continue;
+        }
+
+        for (let testBy = bStartY; testBy <= cy - 75; testBy += 15) {
+          if (distPointToSegment(cx, testBy, cx, cy, rx, ry) < 85) {
+            blockedByBoss = true;
+            break;
+          }
+        }
+      }
+
+      if (blockedByBoss) continue;
+
+      // 4. Verificação de obstrução entre as próprias slimes:
+      // Impede 100% que uma slime fique na frente/atrás de outra na mira do jogador
+      let collidesWithSlime = false;
+      const angC = Math.atan2(ry - cy, rx - cx);
+
+      for (const p of positions) {
+        // Distância euclidiana mínima entre corpos
+        if (Math.hypot(rx - p.x, ry - p.y) < 95) {
+          collidesWithSlime = true;
+          break;
+        }
+
+        // Separação angular mínima a partir da mira do jogador
+        const angP = Math.atan2(p.y - cy, p.x - cx);
+        let dAng = Math.abs(angC - angP);
+        if (dAng > Math.PI) dAng = Math.PI * 2 - dAng;
+        if (dAng < 0.22) { // ~12.6°
+          collidesWithSlime = true;
+          break;
+        }
+
+        // Slime existente 'p' não pode bloquear o tiro do jogador até o novo ponto 'C'
+        if (distPointToSegment(p.x, p.y, cx, cy, rx, ry) < 55) {
+          collidesWithSlime = true;
+          break;
+        }
+
+        // Novo ponto 'C' não pode bloquear o tiro do jogador até a slime existente 'p'
+        if (distPointToSegment(rx, ry, cx, cy, p.x, p.y) < 55) {
+          collidesWithSlime = true;
+          break;
+        }
+      }
+
+      if (collidesWithSlime) continue;
+
+      bestPos = { x: rx, y: ry };
+      found = true;
+      break;
+    }
+
+    // Fallback de segurança em leque angular com garantia de linha de tiro aberta
+    if (!found) {
+      const fanAngle = -Math.PI * 0.72 + (i * (Math.PI * 1.44 / Math.max(1, count - 1)));
+      bestPos = {
+        x: Math.max(minMarginX, Math.min(maxMarginX, cx + Math.cos(fanAngle) * 220)),
+        y: Math.max(minMarginY, Math.min(maxMarginY, cy + Math.sin(fanAngle) * 190 + 35))
+      };
+    }
+
+    positions.push(bestPos);
+  }
+
+  return positions;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FASE 1: O ENIGMA REAL (PUZZLE DAS 5 SLIMES)
+// ══════════════════════════════════════════════════════════════
+function startBossPhase1Puzzle() {
+  if (!kingSlime || kingSlime.hp <= 1000) return;
+  BowAudio.sequence();
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Sorteia aleatoriamente a ordem das 5 cores da sequência
+  const allColors = ['normal', 'blue', 'purple', 'red', 'gray'];
+  for (let i = allColors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allColors[i], allColors[j]] = [allColors[j], allColors[i]];
+  }
+  bossPuzzleSequence = [...allColors];
+  bossPuzzleCurrentIdx = 0;
+  bossPuzzleState = 'march_intro';
+  bossPuzzleTimer = 0;
+
+  // Reposiciona o King Slime no topo
+  kingSlime.x = kingSlime.startX;
+  kingSlime.y = kingSlime.startY;
+  kingSlime.angle = 0;
+  kingSlime.isVulnerable = false;
+  kingSlime.vulnerableMult = 1.0;
+  kingSlime.isJumping = false;
+  kingSlime.jumpZ = 0;
+
+  // Cria as 5 slimes que saltam NA FRENTE do King Slime em fila ordenada (com espaçamento confortável abaixo do boss)
+  bossPuzzleSlimes = [];
+  const spacing = 58;
+  const startRowX = kingSlime.x - (allColors.length - 1) * spacing * 0.5;
+  const frontRowY = kingSlime.startY + 130; // Posicionado bem abaixo do Rei, sem grudar no sprite
+
+  const scatterPositions = getValidPuzzleScatterPositions(allColors.length);
+
+  allColors.forEach((colorKey, idx) => {
+    const targetX = startRowX + idx * spacing;
+    const targetY = frontRowY;
+    const sPos = scatterPositions[idx];
+
+    bossPuzzleSlimes.push({
+      type: colorKey,
+      orderIdx: idx,
+      x: kingSlime.x + (idx - 2) * 14,
+      y: kingSlime.startY + 25, // brota do King Slime
+      startX: kingSlime.x + (idx - 2) * 14,
+      startY: kingSlime.startY + 25,
+      targetX: targetX,
+      targetY: targetY,
+      scatterX: sPos.x,
+      scatterY: sPos.y,
+      size: 64,
+      radius: 24,
+      animTimer: Math.random() * 2,
+      jumpZ: 0,
+      solved: false,
+      flashTimer: 0,
+      angle: 0
+    });
+  });
+}
+
+// Quando o jogador erra a ordem: slimes saltam e trocam de posições mantendo a mesma sequência
+function reorderAndRescatterPuzzle() {
+  bossPuzzleCurrentIdx = 0;
+
+  // Sorteia novas posições espalhadas no mapa respeitando todas as restrições
+  const newPositions = getValidPuzzleScatterPositions(bossPuzzleSlimes.length);
+
+  bossPuzzleSlimes.forEach((s, idx) => {
+    s.solved = false;
+    s.startX = s.x;
+    s.startY = s.y;
+    s.scatterX = newPositions[idx].x;
+    s.scatterY = newPositions[idx].y;
+    s.jumpZ = 0;
+  });
+
+  bossPuzzleState = 'scatter';
+  bossPuzzleTimer = 0;
+  screenShakeTimer = 0.3;
+  screenShakeIntensity = 6;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FASE 2: A INVASÃO SINISTRA (LIMPEZA DE ARENA)
+// ══════════════════════════════════════════════════════════════
+function startBossPhase2() {
+  if (!kingSlime) return;
+  BowAudio.play('phase');
+  kingSlime.phase = 2;
+  kingSlime.isVulnerable = false;
+  kingSlime.vulnerableMult = 1.0;
+  kingSlime.x = kingSlime.startX;
+  kingSlime.y = kingSlime.startY;
+  kingSlime.angle = 0;
+  bossPuzzleSlimes = [];
+  bossPhase2IsVulnerable = false;
+  bossPhase2VulnerableTimer = 0;
+  bossPhase2WaveCount = 0;
+
+  monsters = [];
+  triggerBanner('FASE 2: INVASAO SINISTRA!', '', 4.0);
+  spawnBossPhase2Wave();
+}
+
+function spawnBossPhase2Wave() {
+  bossPhase2WaveCount++;
+  // Onda mista de slimes desafiadoras
+  const waveBoss = kingSlime;
+  const waveSlimes = ['blue', 'purple', 'red', 'gray', 'normal', 'blue', 'purple'];
+  waveSlimes.forEach((type,idx)=>{
+    if(idx===0)spawnSlime(type);
+    else pendingWaveSpawns.push({boss:waveBoss,type,remaining:idx*.16});
+  });
+  for (const side of ['left','right']) {
+    pendingWaveSpawns.push({boss:waveBoss,type:'prism',side,remaining:waveSlimes.length*.16});
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FASE 3: O FRENESI DO REI (ANEL ORBITAL)
+// ══════════════════════════════════════════════════════════════
+function startBossPhase3() {
+  if (!kingSlime) return;
+  BowAudio.play('phase');
+  kingSlime.phase = 3;
+  kingSlime.isVulnerable = false;
+  kingSlime.vulnerableMult = 1.0;
+  BossFinalPhase.begin(kingSlime, canvas.width, canvas.height);
+  bossPuzzleSlimes = [];
+  bossRingAngle = 0;
+  bossRingIsVulnerable = false;
+  bossRingVulnerableTimer = 0;
+
+  // Limpa quaisquer slimes restantes com explosões
+  for (const m of monsters) {
+    spawnSlimeDeathExplosion(m.x, m.y, m.radius || 24);
+  }
+  monsters = [];
+
+  triggerBanner('FASE FINAL: O FRENESI DO REI!', '', 3.0);
+  spawnBossRing();
+}
+
+function spawnBossRing() {
+  const sequence=kingSlime.phase3.sequence;
+  const colors=[...sequence];
+  for (let i=colors.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [colors[i],colors[j]]=[colors[j],colors[i]];
+  }
+  const offset=sequence.indexOf(colors[0]);
+  if (colors.every((color,index)=>color===sequence[(offset+index)%sequence.length])) {
+    [colors[0],colors[1]]=[colors[1],colors[0]];
+  }
+  bossRingSlimes = colors.map((col, idx) => ({
+    type: col,
+    angleOffset: idx * (Math.PI * 2 / colors.length),
+    radius: BossFinalPhase.geometry(canvas.width, canvas.height).ringRadius,
+    size: 52,
+    hitRadius: 24,
+    x: kingSlime.x + Math.cos(bossRingAngle + idx * Math.PI * 2 / colors.length) * BossFinalPhase.geometry(canvas.width, canvas.height).ringRadius,
+    y: kingSlime.y + Math.sin(bossRingAngle + idx * Math.PI * 2 / colors.length) * BossFinalPhase.geometry(canvas.width, canvas.height).ringRadius,
+    animTimer: Math.random() * 2
+  }));
+  bossRingIsVulnerable = false;
+  bossRingVulnerableTimer = 0;
+}
+
+function spawnSlimeSplashParticles(x, y, radius) {
+  const count = radius > 35 ? 16 : (radius < 20 ? 8 : 12);
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+    const spd = 40 + Math.random() * 60;
+    particles.push({
+      x: x + Math.cos(angle) * (radius * 0.4),
+      y: y + Math.sin(angle) * (radius * 0.4),
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      color: Math.random() > 0.4 ? '#4ade80' : '#22c55e',
+      life: 0.25,
+      maxLife: 0.25,
+      size: (radius > 35 ? 3.5 : 2.5) + Math.random() * 2
+    });
+  }
+}
+
+function spawnSlimeHitParticles(x, y, color) {
+  for (let i = 0; i < 6; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = 30 + Math.random() * 70;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      color: color,
+      life: 0.22,
+      maxLife: 0.22,
+      size: 2 + Math.random() * 3
+    });
+  }
+}
+
+function spawnSlimeDeathExplosion(x, y, radius) {
+  const count = radius > 35 ? 26 : (radius < 20 ? 10 : 16);
+  const maxSpd = radius > 35 ? 160 : 120;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = 40 + Math.random() * maxSpd;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      color: Math.random() > 0.4 ? '#22c55e' : '#86efac',
+      life: 0.4,
+      maxLife: 0.4,
+      size: (radius > 35 ? 4 : 3) + Math.random() * 4
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  GAME LOOP
+// ══════════════════════════════════════════════════════════════
+let lastTime = 0;
+let pendingPlayedTime = 0;
+
+function savePlayedTime() {
+  if (pendingPlayedTime > 0 && BowAchievements.addPlayedTime(pendingPlayedTime)) {
+    pendingPlayedTime = 0;
+  }
+}
+
+function recordPlayedTime(seconds) {
+  if (!gameReady || isGameOver || isPaused || audioSettingsOpen || trainingMode || countdownActive || document.hidden) return;
+  if (!Number.isFinite(seconds) || seconds <= 0) return;
+  pendingPlayedTime += seconds;
+  if (pendingPlayedTime >= 5) savePlayedTime();
+}
+
+window.addEventListener('pagehide',savePlayedTime);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){
+    savePlayedTime();
+    window.GameScreens?.pause();
+  }
+  lastTime = performance.now();
+});
+
+function update(dt, realDt = dt) {
+  refreshSpellHUD();
+  if (!gameReady || isGameOver || isPaused || audioSettingsOpen) return;
+  if (trainingMode) window.DevTools?.tickEncounter(dt);
+  if (!trainingMode && !bossPhaseActive && !countdownActive && offerModifiers()) return;
+  for(let i=pendingWaveSpawns.length-1;i>=0;i--){
+    const task=pendingWaveSpawns[i];task.remaining-=dt;
+    if(task.boss!==kingSlime||kingSlime?.phase!==2||kingSlime?.isDefeated){pendingWaveSpawns.splice(i,1);continue;}
+    if(task.remaining<=0){
+      pendingWaveSpawns.splice(i,1);
+      if(task.side) {
+        const left=task.side==='left';
+        spawnSlime(task.type,left?-60:canvas.width+60,canvas.height*(left?.42:.58));
+      } else spawnSlime(task.type);
+    }
+  }
+  BowAudio.scene(currentMapStage, bossPhaseActive,currentRegion.id);
+  const previousRunTime = runTimer;
+  runTimer += dt;
+  realRunTime += realDt;
+  if(!acceleratedRun&&!survivalRun&&!trainingMode&&!ravenMode&&!egyptianMode&&!countdownActive&&previousRunTime<360&&runTimer>=360){
+    BowAchievements.fact('dusk_'+currentVocation);
+  }
+  ExpansionContent.step(expansionScene,dt);
+  const regionBoss=ExpansionContent.BOSSES[currentRegion.id];
+  if(!trainingMode&&regionBoss&&currentMapStage===regionBoss.stageIndex&&!mapTransitionActive&&!countdownActive&&!expansionScene.boss){monsters=[];projectiles=[];ExpansionContent.showBoss(expansionScene,currentRegion.id,canvas.width,canvas.height);}
+
+  // 0. Contagem Regressiva Arcade no Início da Wave (3, 2, 1, Grito de Guerra!)
+  if (countdownActive) {
+    countdownTimer -= dt;
+    const currentNum = Math.ceil(countdownTimer - 0.9);
+    if (currentNum > 0 && currentNum !== lastBeepPlayed) {
+      lastBeepPlayed = currentNum;
+      playCountdownBeep(false);
+    } else if (countdownTimer <= 0.9 && countdownTimer > 0 && lastBeepPlayed !== 0) {
+      lastBeepPlayed = 0;
+      playCountdownBeep(true);
+    }
+    if (countdownTimer <= 0) {
+      countdownActive = false;
+      countdownTimer = 0;
+      shootCooldown = 0;
+    }
+  }
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const cfg = VOCATION_CONFIG[currentVocation];
+  const timeline = getTimelineConfig();
+
+  // Atualiza HUD de tempo e estágio dia→noite a cada frame
+  updatePhaseHUD();
+  updateCardProgress();
+
+  // 1. Rotação 360 Suave acompanhando o Mouse
+  targetAngle = Math.atan2(mouse.y - cy, mouse.x - cx);
+
+  // Interpolação angular com sensibilidade suave e natural
+  let diff = targetAngle - playerAngle;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  playerAngle += diff * Math.min(1, dt * 14);
+
+  if(currentVocation==='Knight'&&vocationSpells.berserk)currentResource=reserveCapacity(cfg);
+  // 2. Disparo Contínuo ao Manter Pressionado (Bloqueado durante contagem)
+  if (shootCooldown > 0) shootCooldown -= dt;
+  if (isMouseDown && !countdownActive) {
+    tryShoot();
+  }
+
+  // 3. Atualizar Regeneração de Recursos (Stamina / Mana / Sementes / Aljava)
+  if(chargeElapsed!==null)chargeElapsed=Math.min(4,chargeElapsed+dt);
+  const capacity = reserveCapacity(cfg);
+  const regenDelay = resourceRecoveryDelay(cfg);
+  if (currentResource >= capacity) reserveRecovering = false;
+  else if (autoReloadUnlocked && !reserveRecovering && currentResource < shotCost(cfg) && !freeShot) startResourceRecovery();
+  if (reserveRecovering) {
+    timeSinceLastShot += dt;
+    if (timeSinceLastShot + 1e-9 >= regenDelay) recoverReserve(capacity);
+  }
+
+  // Passiva do Druida: cura contínua de vida
+  if (cfg.passiveHpRegen && currentHp < maxPlayerHp) {
+    currentHp = Math.min(maxPlayerHp, currentHp + cfg.passiveHpRegen * dt);
+  }
+
+  // Atualizar barras de status no HUD
+  updateHUD(cfg);
+  if (currentHp > 0 && currentHp < maxPlayerHp * .25) BowAudio.play('low_health');
+
+  // 4. Amortecimento do Recuo
+  if (recoil > 0) {
+    recoil -= dt * 45;
+    if (recoil < 0) recoil = 0;
+  }
+
+  // 5. Invulnerabilidade do Herói & Timer do Banner
+  if (playerInvulnTimer > 0) {
+    playerInvulnTimer -= dt;
+  }
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+  }
+  if (screenShakeTimer > 0) {
+    screenShakeTimer -= dt;
+  }
+
+  // 5b. Tempo de jogo + transição suave dia→noite & Despertar do Rei Slime
+  if (!countdownActive) {
+    gameTimeSec += dt;
+
+    checkPhaseProgression();
+
+    // Cronômetro da introdução/cutscene do Rei Slime (24 frames)
+    if (bossIntroActive) {
+      bossIntroTimer += dt;
+      if (bossIntroTimer >= BOSS_INTRO_DURATION) {
+        bossIntroActive = false;
+        spawnKingSlime();
+      }
+    }
+
+    // Verifica se chegou a hora de iniciar a próxima transição de estágio
+    if (!trainingMode && nextTransitionIdx < MAP_TRANSITION_TRIGGERS.length &&
+        gameTimeSec >= MAP_TRANSITION_TRIGGERS[nextTransitionIdx] &&
+        !mapTransitionActive) {
+      mapTransitionActive = true;
+      mapTransitionAlpha  = 0;
+      nextTransitionIdx++;
+    }
+
+    // Avança o crossfade gradualmente
+    if (mapTransitionActive) {
+      mapTransitionAlpha += MAP_TRANSITION_SPEED;
+      if (mapTransitionAlpha >= 1) {
+        mapTransitionAlpha   = 0;
+        mapTransitionActive  = false;
+        currentMapStage      = Math.min(currentMapStage + 1, MAP_STAGES.length - 1);
+        currentMapIdx        = currentMapStage; // mantém compat
+      }
+    }
+  }
+
+  // 6. Spawn de Slimes Conforme a Linha do Tempo (Totalmente pausado durante o Boss King Slime)
+  if(pactRaid){
+    PactRaids.step(pactRaid,dt,monsters.length,runPact.spawnRate,{
+      time:runTimer,prismAlive:monsters.some(m=>m.variant==='prism'),
+      spawn:(type,health,damage,side)=>{
+        if(side)spawnSlime(type,side<0?-60:canvas.width+60,canvas.height*(.2+Math.random()*.6));
+        else spawnSlime(type);
+        const mob=monsters.at(-1);
+        mob.hp=mob.maxHp=Math.ceil(mob.maxHp*health);
+        mob.touchDamage*=damage;
+      },
+      announce:(minute,name)=>triggerBanner('MINUTO '+(minute+1),name,2.5),
+      clear:()=>savePactRaidRecord()
+    });
+  } else if (!trainingMode && !egyptianMode && !expansionScene.phoenix && !countdownActive && !bossIntroActive && !bossPhaseActive) {
+    slimeSpawnTimer -= dt;
+    if (slimeSpawnTimer <= 0 && (!ravenMode || !ravenState.invasion)) {
+      if (ravenMode) {
+        spawnSlime();
+        slimeSpawnTimer = timeline.spawnInterval / runPact.spawnRate;
+      } else {
+        const intro = timeline.intro && !introducedSlimes.has(timeline.intro) ? timeline.intro : null;
+        spawnSlime(intro);
+        if (intro) introducedSlimes.add(intro);
+        const rhythm = SLIME_SPAWN_RHYTHM[slimeRhythmStep++ % SLIME_SPAWN_RHYTHM.length];
+        slimeSpawnTimer = timeline.spawnInterval * rhythm / runPact.spawnRate;
+      }
+    }
+  }
+
+  if (!acceleratedRun&&!survivalRun&&!ravenMode&&!egyptianMode&&!countdownActive&&(!trainingMode||frogEncounter.demo)) FrogBonus.step(frogEncounter, dt, {
+    time: runTimer, width: canvas.width, height: canvas.height,
+    unlocked: frogDiscoveryUnlocked && !frogEncounter.demo, boss: bossPhaseActive || bossIntroActive
+  });
+
+  if(!trainingMode&&ravenMode&&!expansionScene.phoenix&&!countdownActive){
+    RavenStage.flock(ravenState,dt,{
+      time:runTimer,width:canvas.width,height:canvas.height,
+      announce:()=>{BowAudio.play('crow');triggerBanner('INVASÃO DE CORVOS','Um bando se aproxima pelos dois lados.',3);},
+      emit:bird=>{if(monsters.length>=36)return false;monsters.push(bird);return true;}
+    });
+  }
+  const spellTargets=targetableMonsters();
+  if(currentVocation!=='Archer')vocationSpells.update(dt,{ground:groundSurface,x:cx,y:cy,active:canCastSpell(),monsters:spellTargets,targets:bossPhaseActive&&kingSlime&&!kingSlime.isDefeated?[...spellTargets,kingSlime]:spellTargets,heal:fraction=>{if(currentHp>0)currentHp=Math.min(maxPlayerHp,currentHp+maxPlayerHp*fraction);}});
+  archerSpells.update(dt,{x:cx,y:cy,active:canCastSpell(),width:canvas.width,height:canvas.height,monsters:bossPhaseActive&&kingSlime&&!kingSlime.isDefeated?[...spellTargets,kingSlime]:spellTargets});
+
+  BonsaiDiscovery.step(bonsaiEncounter,dt,{
+    time:runTimer,width:canvas.width,height:canvas.height,
+    eligible:!acceleratedRun&&!survivalRun&&!gardenerDiscovered&&!trainingMode&&!ravenMode&&!egyptianMode&&!countdownActive&&!bossPhaseActive&&!bossIntroActive
+  });
+  MerchantDiscovery.step(merchantEncounter,dt,cx,cy);
+  if(ravenMode&&!expansionScene.phoenix&&!countdownActive&&(!trainingMode||crowEncounter.demo))CrowBonus.step(crowEncounter,dt,{time:runTimer,width:canvas.width,height:canvas.height,eligible:true,unlocked:BowDiscovery.read().crowBonus===true,boss:bossPhaseActive||bossIntroActive});
+  OrbDrops.step(orbDrops,dt);
+
+  // 7. Atualizar Projéteis & Colisão com Monstros
+  for (let pi = projectiles.length - 1; pi >= 0; pi--) {
+    const p = projectiles[pi];
+    if(p.guardArrow?.spent||p.royalSword?.spent){projectiles.splice(pi,1);continue;}
+    if(p.spellId&&(countdownActive||bossIntroActive))continue;
+    if(p.homing){const targets=monsters.filter(m=>m.hp>0&&!m.isRetreating&&m.grayForm!=='goo'&&m.grayForm!=='translucent');targets.sort((a,b)=>Math.hypot(a.x-p.x,a.y-p.y)-Math.hypot(b.x-p.x,b.y-p.y));const t=targets[0];if(t){const desired=Math.atan2(t.y-p.y,t.x-p.x),diff=Math.atan2(Math.sin(desired-p.angle),Math.cos(desired-p.angle));p.angle+=Math.max(-3*dt,Math.min(3*dt,diff));p.vx=Math.cos(p.angle)*430;p.vy=Math.sin(p.angle)*430;}}
+    if(p.leap)p.age=(p.age||0)+dt;
+    p.life -= dt;
+    if (p.life <= 0) {
+      projectiles.splice(pi, 1);
+      continue;
+    }
+
+    const previousProjectile = {x:p.fromX??p.x,y:p.fromY??p.y};
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    // Rastro dinâmico
+    p.trail.push({ x: p.x, y: p.y });
+    if (p.trail.length > 5) p.trail.shift();
+
+    // Colisão Projétil vs Slimes
+    let hitMonster = false;
+    let piercedTarget = null;
+  for (let mi = monsters.length - 1; mi >= 0; mi--) {
+      const m = monsters[mi];
+      if(m.grayForm==='translucent')continue;
+      if(p.groundOnly&&!groundSurface.contains(m.x,m.y))continue;
+      if(p.screenOnly&&(m.x<0||m.x>canvas.width||m.y<0||m.y>canvas.height))continue;
+      if(p.royalSword&&(m.isRetreating||m.hp<=0))continue;
+      if (p.hitTargets?.has(m)||p.onlyTarget&&p.onlyTarget!==m) continue;
+
+      // Evasão no ar: se o slime estiver no alto do salto (jumpZ > 0.35), o projétil passa por baixo!
+      if (!p.hitsAir&&m.type!=='gray'&&m.isJumping && m.jumpZ > 0.35) {
+        continue;
+      }
+
+      let dist = Math.hypot(p.x - m.x, p.y - m.y);
+      if(p.spellId){
+       const dx=p.x-previousProjectile.x,dy=p.y-previousProjectile.y,length=dx*dx+dy*dy;
+       const t=length?Math.max(0,Math.min(1,((m.x-previousProjectile.x)*dx+(m.y-previousProjectile.y)*dy)/length)):0;
+       dist=Math.hypot(m.x-previousProjectile.x-t*dx,m.y-previousProjectile.y-t*dy);
+      }
+      const hitRadius = p.areaImpact?m.radius+p.impactRadius:m.shielded ? Math.max(m.radius, (m.size || 84) * 0.58) + 14 : (m.radius + (p.hitRadius||14));
+
+      if (dist < hitRadius) {
+        hitMonster = true;
+        if (m.grayForm === 'goo') {
+          if (p.pierceAll) {
+            p.hitTargets = p.hitTargets || new Set();
+            p.hitTargets.add(m);
+          }
+          spawnSlimeHitParticles(m.x,m.y,'#475569');
+          BowAudio.play('rock');
+          if(p.areaImpact||p.pierceAll)continue;
+          break;
+        }
+        if(p.royalSword && !(m.kind==='raven'&&m.shielded) && !(m.variant==='prism' && !m.furyActive)){
+          m.isRetreating=true;m.isJumping=false;m.jumpZ=0;m.isDashing=false;m.rootTimer=0;m.vortexTimer=0;
+          const away=Math.atan2(m.y-canvas.height/2,m.x-canvas.width/2);
+          m.angle=away-Math.PI/2;
+          if(m.kind==='raven'){m.mode='retreat';m.vx=Math.cos(away)*270;m.vy=Math.sin(away)*270;m.didHit=true;}
+          spawnSlimeHitParticles(m.x,m.y,'#8cd5ff');BowAudio.play('shield');
+          break;
+        }
+        if(p.pierceAll){p.hitTargets=p.hitTargets||new Set();p.hitTargets.add(m);}
+
+        // ── MECÂNICA BLUE: Escudo — 1º hit quebra o escudo, não causa dano ──
+        if (m.shielded) {
+          m.shielded = false;
+          m.hitFlash = 0.25;
+          // Partículas azuis de escudo quebrado
+          spawnSlimeHitParticles(m.x, m.y, '#38bdf8');
+          damageNumbers.push({
+            x: m.x + (Math.random() - 0.5) * 16,
+            y: m.y - 22,
+            text: 'ESCUDO!',
+            color: '#38bdf8',
+            life: 0.9,
+            maxLife: 0.9
+          });
+          BowAudio.play('shield_break');
+          if(p.areaImpact||p.pierceAll)continue;
+          break; // consome o projétil mas não causa dano
+        }
+
+        // ── MECÂNICA RED: Modo Fúria ──
+        // 1º tiro: Absorve o impacto (0 dano), ativa Fúria e dispara em alta velocidade (+75%)
+        // 2º tiro em diante: Sofre dano normal
+        if ((m.type === 'red' || m.variant === 'prism') && !m.furyActive) {
+          m.furyActive = true;
+          if (m.variant === 'prism') {
+            m.canDash = true;
+            m.dashCooldown = m.jumpCooldown = .25;
+            m.prismDefenseTimer = 2.6 + Math.random()*1.6;
+          }
+          const red = slimeBehavior(m);
+          m.furyWindup = red.furyWindup || 0;
+          if (m.furyWindup > 0) {
+            m.isJumping = false;
+            m.jumpZ = 0;
+          } else m.speed = red.speed * red.furySpeedMult * runPact.enemySpeed;
+          m.hitFlash = 0.35;
+          for (let fi = 0; fi < 14; fi++) {
+            particles.push({
+              x: m.x + (Math.random() - 0.5) * 26,
+              y: m.y + (Math.random() - 0.5) * 26,
+              vx: (Math.random() - 0.5) * 90,
+              vy: (Math.random() - 0.5) * 90,
+              color: Math.random() > 0.4 ? '#ef4444' : '#f97316',
+              size: 4 + Math.random() * 4,
+              life: 0.35,
+              maxLife: 0.35
+            });
+          }
+          damageNumbers.push({
+            x: m.x + (Math.random() - 0.5) * 16,
+            y: m.y - 24,
+            text: ' FÚRIA!',
+            color: '#ef4444',
+            life: 1.0,
+            maxLife: 1.0
+          });
+          BowAudio.play('fury');
+          if(p.areaImpact||p.pierceAll)continue;
+          break; // consome o projétil sem dano de HP
+        }
+
+        const vocCfg = VOCATION_CONFIG[p.voc] || cfg;
+        let dmg = projectileDamage(p,vocCfg,m.x,m.y);
+        let isCrit = false;
+
+        // Mecânica de Retaliação / Dano em Dobro nas Costas:
+        if (m.isRetreating) {
+          dmg *= 2;
+          isCrit = true;
+        }
+
+        if(p.rootDuration)m.rootTimer=Math.max(m.rootTimer||0,p.rootDuration);
+        piercedTarget = m;
+        const hpBeforeHit = m.hp;
+        m.hp -= dmg;
+        pactLifeSteal(dmg, hpBeforeHit);
+        m.hitFlash = isCrit ? 0.22 : 0.15;
+
+        // Knockback (reduzido se Red estiver em Fúria)
+        const kMult = ((m.type === 'red' || m.variant === 'prism') && m.furyActive) ? 0.35 : (m.knockbackMult !== undefined ? m.knockbackMult : 1.0);
+        const kDist = (p.spellKnock||(p.spellId?12:(vocCfg.knockback || 14) * (1 + .15 * rank('M04')))) * kMult * (isCrit ? 1.4 : 1.0);
+        m.x += Math.cos(p.angle) * kDist;
+        m.y += Math.sin(p.angle) * kDist;
+
+        // Texto flutuante de dano
+        damageNumbers.push({
+          x: m.x + (Math.random() - 0.5) * 16,
+          y: m.y - 18,
+          text: isCrit ? `CRIT! -${dmg}` : `-${dmg}`,
+          color: isCrit ? '#facc15' : (vocCfg.color || '#fff'),
+          life: isCrit ? 1.0 : 0.75,
+          maxLife: isCrit ? 1.0 : 0.75
+        });
+
+        // Cor das partículas por tipo de slime
+        const hitColor = {
+          blue: '#38bdf8', purple: '#a855f7',
+          gray: '#94a3b8', red: '#ef4444'
+        }[m.type] || (isCrit ? '#facc15' : '#22c55e');
+        spawnSlimeHitParticles(m.x, m.y, hitColor);
+        if(p.voc==='Archer')BowAudio.play(isCrit ? 'critical' : 'hit');
+        if(m.kind!=='raven'&&m.hp>0)BowAudio.play('slime_hit');
+
+        // Checar Morte do Slime
+        if (m.hp <= 0) {
+          if(!trainingMode&&m.kind==='raven')RavenStage.drop(orbDrops,m,{unlocked:BowDiscovery.merchantUnlocked(),width:canvas.width,height:canvas.height});
+          else if(!acceleratedRun&&!survivalRun&&!trainingMode)OrbDrops.drop(orbDrops,{type:m.variant==='prism'?'gray':m.type,x:Math.max(28,Math.min(canvas.width-28,m.x)),y:Math.max(28,Math.min(canvas.height-28,m.y)),unlocked:BowDiscovery.merchantUnlocked(),boss:bossPhaseActive||bossIntroActive,multiplier:runPact.dropChance||1});
+          if(!acceleratedRun&&!survivalRun&&!trainingMode&&!ravenMode&&!egyptianMode&&MerchantDiscovery.tryDrop(merchantEncounter,{time:runTimer,x:Math.max(32,Math.min(canvas.width-32,m.x)),y:Math.max(32,Math.min(canvas.height-32,m.y)),unlocked:BowDiscovery.merchantUnlocked(),boss:bossPhaseActive||bossIntroActive,recordRun:BowDiscovery.recordMerchantRun})){
+            BowAudio.play('landing');triggerBanner('UMA SACOLINHA CAIU','Passe o mouse sobre ela para recolher.',3);
+          }
+          if(!acceleratedRun&&!survivalRun&&!trainingMode)BowAchievements.kill();
+          if (!trainingMode && !bossPhaseActive) recordModifierKill();
+          if(!acceleratedRun&&!survivalRun&&!trainingMode&&!bossPhaseActive&&!bossIntroActive)campaignGoldCents+=BowEconomy.killCents(m.type,m.variant,!ravenMode&&!egyptianMode);
+          slimesDefeated++;
+          phaseKills++;
+          checkPhaseProgression();
+          if(p.evaporate){for(let mote=0;mote<20;mote++)particles.push({x:m.x+(Math.random()-.5)*m.radius*2,y:m.y+(Math.random()-.5)*m.radius*2,vx:(Math.random()-.5)*45,vy:-35-Math.random()*70,color:mote%2?'#fff0b8':'#a3efc6',size:2+Math.random()*3,life:.7+Math.random()*.4,maxLife:1.1});}else if(m.kind==='raven')spawnSlimeHitParticles(m.x,m.y,m.color);else spawnSlimeDeathExplosion(m.x, m.y, m.radius);
+          if(m.kind==='raven')BowAudio.play('crow');else playSlimeDeathSound();
+
+          monsters.splice(mi, 1);
+          updateKillCounter();
+        }
+        if(!p.areaImpact&&!p.pierceAll)break; // Impactos de chuva percorrem todos os alvos da área.
+      }
+    }
+
+    if(p.royalSword){if(hitMonster)vocationSpells.consumeSword(p.royalSword);projectiles.splice(pi,1);continue;}
+    if((!hitMonster||p.areaImpact)&&(!p.groundOnly||crowEncounter.bird&&groundSurface.contains(crowEncounter.bird.x,crowEncounter.bird.y))&&CrowBonus.hit(crowEncounter,previousProjectile,p,()=>crowEncounter.demo||BowDiscovery.unlockCrowBonus())){
+      hitMonster=true;
+      if(!crowEncounter.demo){
+        BowAudio.play('upgrade');
+        triggerBanner('SEGREDO DOS PACTOS DESCOBERTO','VISITE A ABA SEGREDOS DA BRUXA PARA DESPERTAR OS PACTOS.',5.5);
+      }
+    }
+    if (!hitMonster && FrogBonus.hit(frogEncounter, previousProjectile, p)) {
+      hitMonster = true;
+      if (!frogEncounter.demo && !frogDiscoveryUnlocked && BowDiscovery.unlockWitch()) {
+        frogDiscoveryUnlocked = true;
+        BowAudio.play('upgrade');
+        triggerBanner('UM PACTO FOI REVELADO!', 'GRIMÓRIO DA BRUXA DESBLOQUEADO NO ACAMPAMENTO!', 5.5);
+      } else if (!frogEncounter.demo && !frogDiscoveryUnlocked) {
+        triggerBanner('O SAPINHO FOI ENCONTRADO!', 'NÃO FOI POSSÍVEL SALVAR A DESCOBERTA NESTE NAVEGADOR.', 5.5);
+      }
+    }
+
+    // ── Checar Colisão com as Slimes do Puzzle (Fase 1) ──
+    if (!hitMonster && bossPhaseActive && kingSlime && kingSlime.phase === 1 && bossPuzzleState === 'waiting_input') {
+      for (let psi = 0; psi < bossPuzzleSlimes.length; psi++) {
+        const ps = bossPuzzleSlimes[psi];
+        if (ps.solved) continue;
+        const dps = Math.hypot(p.x - ps.x, p.y - ps.y);
+        if (dps < ps.radius + 14) {
+          hitMonster = true;
+          if(p.spellId)break; // O puzzle continua sendo resolvido pelo ataque básico.
+          const targetType = bossPuzzleSequence[bossPuzzleCurrentIdx];
+
+          if (ps.type === targetType) {
+            // ACERTO CORRETO NA SEQUÊNCIA!
+            ps.solved = true;
+            bossPuzzleCurrentIdx++;
+            spawnSlimeHitParticles(ps.x, ps.y, SLIME_TYPE_COLORS[ps.type] || '#4ade80');
+            BowAudio.play('puzzle', {rate: [1, 1.122, 1.26, 1.335, 1.498][bossPuzzleCurrentIdx - 1]});
+
+            damageNumbers.push({
+              x: ps.x,
+              y: ps.y - 20,
+              text: `CORRETO! (${bossPuzzleCurrentIdx}/5)`,
+              color: '#4ade80',
+              life: 1.0,
+              maxLife: 1.0
+            });
+
+            // Se acertou todas as 5 na ordem:
+            if (bossPuzzleCurrentIdx >= bossPuzzleSequence.length) {
+              bossPuzzleState = 'success_retreat';
+              kingSlime.isVulnerable = true;
+              kingSlime.vulnerableMult = 2.0;
+              kingSlime.vulnerableTimer = 4.5;
+              screenShakeTimer = 0.5;
+              screenShakeIntensity = 8;
+              
+              playCountdownBeep(true);
+            }
+          } else {
+            // ERRO NA SEQUÊNCIA: Reembaralha as slimes do puzzle!
+            spawnSlimeHitParticles(ps.x, ps.y, '#ef4444');
+            BowAudio.play('puzzle_error');
+
+            damageNumbers.push({
+              x: ps.x,
+              y: ps.y - 20,
+              text: 'ORDEM ERRADA!',
+              color: '#ef4444',
+              life: 1.0,
+              maxLife: 1.0
+            });
+
+            reorderAndRescatterPuzzle();
+          }
+          break;
+        }
+      }
+    }
+
+    // ── Checar Colisão com o Anel Orbital de Slimes (Fase 3) ──
+    if (!hitMonster && bossPhaseActive && kingSlime && kingSlime.phase === 3 && kingSlime.phase3?.mode==='input' && bossRingSlimes.length > 0) {
+      for (let rsi = bossRingSlimes.length - 1; rsi >= 0; rsi--) {
+        const rs = bossRingSlimes[rsi];
+        const drs = Math.hypot(p.x - rs.x, p.y - rs.y);
+        if (drs < rs.hitRadius + 14) {
+          hitMonster = true;
+          if(!p.spellId){
+            const result=BossFinalPhase.hit(kingSlime,rs.type);
+            if(result==='correct'||result==='complete'){
+              spawnSlimeDeathExplosion(rs.x,rs.y,rs.hitRadius);BowAudio.play('puzzle');bossRingSlimes.splice(rsi,1);
+            }else if(result==='wrong'){
+              spawnSlimeHitParticles(rs.x,rs.y,'#ef4444');BowAudio.play('puzzle_error');spawnBossRing();
+            }
+            if(result==='complete'){
+              bossRingIsVulnerable=true;bossRingVulnerableTimer=BossFinalPhase.EXPOSED;BowAudio.play('shield_break');
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // ── Checar Colisão com o Boss King Slime ──
+    if ((!p.onlyTarget||p.onlyTarget===kingSlime)&&(!hitMonster||p.areaImpact||p.pierceAll)&&!p.hitTargets?.has(kingSlime) && bossPhaseActive && kingSlime && !kingSlime.isDefeated) {
+      if (!kingSlime.isJumping || kingSlime.jumpZ <= 0.45) {
+        const distK = Math.hypot(p.x - kingSlime.x, p.y - kingSlime.y);
+        if (distK < kingSlime.radius + (p.areaImpact?p.impactRadius:(p.hitRadius||18))) {
+          if(p.pierceAll){p.hitTargets=p.hitTargets||new Set();p.hitTargets.add(kingSlime);}
+          hitMonster = true;
+          const vocCfg = VOCATION_CONFIG[p.voc] || cfg;
+          let baseDmg = projectileDamage(p,vocCfg,kingSlime.x,kingSlime.y);
+
+          // Avalia se o King Slime pode receber dano na fase atual:
+          let canTakeDamage = false;
+          let isDoubleDamage = false;
+          let immuneReason = 'IMUNE!';
+
+          if (kingSlime.phase === 1) {
+            if (bossPuzzleState === 'success_retreat') {
+              canTakeDamage = true;
+              isDoubleDamage = true; // Dano em dobro nas costas após decifrar o puzzle!
+            } else {
+              immuneReason = 'IMUNE!';
+            }
+          } else if (kingSlime.phase === 2) {
+            if (bossPhase2IsVulnerable) {
+              canTakeDamage = true;
+            } else {
+              immuneReason = 'IMUNE!';
+            }
+          } else if (kingSlime.phase === 3) {
+            if (kingSlime.phase3?.mode==='exposed') {
+              canTakeDamage = true;
+            } else {
+              immuneReason = 'IMUNE!';
+            }
+          }
+
+          if (canTakeDamage) {
+            const finalDmg = isDoubleDamage ? (baseDmg * 2) : baseDmg;
+            const hpBeforeHit = kingSlime.hp;
+            kingSlime.hp -= finalDmg;
+            pactLifeSteal(finalDmg, hpBeforeHit);
+            kingSlime.hitFlash = 0.20;
+
+            // Knockback muito sutil (monarca pesado)
+            kingSlime.x += Math.cos(p.angle) * (vocCfg.knockback || 14) * 0.08;
+            kingSlime.y += Math.sin(p.angle) * (vocCfg.knockback || 14) * 0.08;
+
+            damageNumbers.push({
+              x: kingSlime.x + (Math.random() - 0.5) * 40,
+              y: kingSlime.y - 35,
+              text: isDoubleDamage ? `2x CRIT! -${finalDmg}` : `-${finalDmg}`,
+              color: isDoubleDamage ? '#fde047' : '#facc15',
+              life: 0.95,
+              maxLife: 0.95
+            });
+
+            spawnSlimeHitParticles(kingSlime.x, kingSlime.y, isDoubleDamage ? '#fde047' : '#f59e0b');
+            playHitSound();
+
+            // Transições de Fase baseadas no HP restante:
+            if (kingSlime.phase === 1 && kingSlime.hp <= 1000) {
+              startBossPhase2();
+            } else if (kingSlime.phase === 2 && kingSlime.hp <= 500) {
+              startBossPhase3();
+            } else if (kingSlime.hp <= 0) {
+              kingSlime.hp = 0;
+              kingSlime.isDefeated = true;
+
+              slimesDefeated += 100;
+              updateKillCounter();
+              screenShakeTimer = 3.0;
+              screenShakeIntensity = 14;
+              const defeatedBoss = kingSlime;
+              for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                  if (kingSlime !== defeatedBoss) return;
+                  spawnSlimeDeathExplosion(
+                    kingSlime.x + (Math.random() - 0.5) * 80,
+                    kingSlime.y + (Math.random() - 0.5) * 80,
+                    70
+                  );
+                  playSlimeDeathSound();
+                }, i * 180);
+              }
+              kingSlimeRewardPending = true;
+              triggerBanner('VITORIA LENDARIA!', 'O REI DOS SLIMES FOI DESTRONADO!', 5.0);
+              triggerVictory();
+              return;
+            }
+          } else {
+            // Tiro bloqueado pela imunidade da mecânica atual
+            spawnSlimeHitParticles(kingSlime.x, kingSlime.y, '#94a3b8');
+            BowAudio.play('shield');
+
+            damageNumbers.push({
+              x: kingSlime.x + (Math.random() - 0.5) * 30,
+              y: kingSlime.y - 30,
+              text: immuneReason,
+              color: '#94a3b8',
+              life: 0.7,
+              maxLife: 0.7
+            });
+          }
+        }
+      }
+    }
+
+    if(hitMonster&&p.guardArrow)archerSpells.consumeGuardian(p.guardArrow);
+    if(p.transient){projectiles.splice(pi,1);continue;}
+    if (hitMonster&&!p.pierceAll) {
+      if (piercedTarget && (p.pierceLeft || 0) > 0) {
+        p.hitTargets = p.hitTargets || new Set();
+        p.hitTargets.add(piercedTarget);
+        p.pierceLeft--;
+      } else projectiles.splice(pi, 1);
+    }
+  }
+
+  // 8. Atualizar Movimentação dos Monstros em Direção ao Centro, Recuo Tático & Pulos
+  if(ravenMode&&!countdownActive&&!expansionScene.phoenix)RavenStage.coordinate(ravenState,dt,{all:monsters,width:canvas.width,height:canvas.height,speed:runPact.enemySpeed});
+  for (let mi = monsters.length - 1; mi >= 0; mi--) {
+    const m = monsters[mi];
+    if (m.hitFlash > 0) m.hitFlash -= dt;
+    if (m.squishTimer > 0) m.squishTimer -= dt;
+    m.animTimer += dt;
+    if (m.variant === 'prism' && !countdownActive) {
+      advancePrismColor(m,dt);
+      if (!m.isRetreating) advancePrismDefense(m,dt);
+    }
+    if (m.type === 'gray' && !m.isRetreating && !countdownActive) {
+      const forms = SLIME_TYPES.gray;
+      m.grayTimer -= dt;
+      if (m.grayTimer <= 0) {
+        const durations = {solid:forms.solidDuration, goo:forms.gooDuration, translucent:forms.translucentDuration};
+        const nextForms = Object.keys(durations).filter(form => form !== m.grayForm);
+        m.grayForm = nextForms[Math.floor(Math.random() * nextForms.length)];
+        m.grayTimer += durations[m.grayForm];
+        m.isJumping = false;
+        m.jumpZ = m.rootTimer = m.vortexTimer = 0;
+      }
+    }
+    if (!m.isRetreating && !countdownActive) {
+      if (m.grayForm === 'goo') continue;
+      if (m.grayForm === 'translucent') {
+        const dx = cx-m.x, dy = cy-m.y, distance = Math.hypot(dx,dy);
+        const travel = Math.min(m.speed*dt,Math.max(0,distance-m.radius-12));
+        if (travel > 0) {
+          m.x += dx/distance*travel;
+          m.y += dy/distance*travel;
+        }
+        continue;
+      }
+    }
+    m.vortexTimer=Math.max(0,(m.vortexTimer||0)-dt);
+    const gravitySlow=m.vortexTimer>0?.3:1;
+    if(m.rootTimer>0){m.rootTimer=Math.max(0,m.rootTimer-dt);continue;}
+
+    // Pausa a movimentação e ataques dos monstros durante a contagem regressiva
+    if (countdownActive) continue;
+    if(m.kind==='raven'){
+      const flightMode=m.mode,wasClimbing=m.isJumping;
+      const removed=RavenStage.step(m,dt,{width:canvas.width,height:canvas.height,all:monsters,projectiles,speed:runPact.enemySpeed*gravitySlow,damage:amount=>{
+        if(playerInvulnTimer>0||isGameOver)return;playerInvulnTimer=.8;
+        const dealt=applyPlayerDamage(amount);BowAudio.play('damage');screenShakeTimer=.25;screenShakeIntensity=5;
+        damageNumbers.push({x:cx,y:cy-30,text:'-'+dealt+' HP',color:'#ef7979',life:.7,maxLife:.7});
+        if(currentHp<=0)triggerGameOver();
+      }});
+      if((!wasClimbing&&m.isJumping)||(flightMode!==m.mode&&['dive','combo_dive','evade'].includes(m.mode)))BowAudio.play('crow_flight');
+      if(removed)monsters.splice(mi,1);
+      if(isGameOver)return;
+      continue;
+    }
+
+    const toCx = cx - m.x;
+    const toCy = cy - m.y;
+    const dToPlayer = Math.hypot(toCx, toCy);
+    const def = slimeBehavior(m);
+
+    // ─── COMPORTAMENTO 1: FUGA APÓS GOLPEAR O JOGADOR (Dá as costas e foge sumindo do mapa em alta velocidade) ───
+    if (m.isRetreating) {
+      // Dá as costas para o herói enquanto foge (+ Math.PI / 2)
+      m.angle = Math.atan2(toCy, toCx) + Math.PI / 2;
+
+      // Foge em velocidade bem mais rápida (1.9x a velocidade normal)
+      const escapeSpeed = m.speed * 1.9;
+      const awayX = dToPlayer ? -toCx / dToPlayer : 1;
+      const awayY = dToPlayer ? -toCy / dToPlayer : 0;
+      m.x += awayX * escapeSpeed * dt;
+      m.y += awayY * escapeSpeed * dt;
+
+      // Partículas sutis de poeira da debandada
+      if (Math.random() < 0.25) {
+        particles.push({
+          x: m.x + (Math.random() - 0.5) * 16,
+          y: m.y + (Math.random() - 0.5) * 16,
+          vx: -awayX * 12,
+          vy: -awayY * 12,
+          color: 'rgba(255, 255, 255, 0.25)',
+          size: 2.5 + Math.random() * 2,
+          life: 0.16,
+          maxLife: 0.16
+        });
+      }
+
+      // Ao ultrapassar as bordas externas do mapa, some definitivamente!
+      const despawnMargin = 100;
+      if (m.x < -despawnMargin || m.x > canvas.width + despawnMargin ||
+          m.y < -despawnMargin || m.y > canvas.height + despawnMargin) {
+        if(pactRaid){
+          m.x=Math.max(-60,Math.min(canvas.width+60,m.x));
+          m.y=Math.max(-60,Math.min(canvas.height+60,m.y));
+          m.isRetreating=false;
+        }else monsters.splice(mi, 1);
+      }
+      continue; // Não executa ataques nem pulos enquanto foge
+    } else {
+      // ─── COMPORTAMENTO 2: AVANÇO EM DIREÇÃO AO HERÓI ───
+      m.angle = Math.atan2(toCy, toCx) - Math.PI / 2;
+
+      // ── MECÂNICA RED: Fagulhas incandescentes e velocidade constante no Modo Fúria ──
+      if ((m.type === 'red' || m.variant === 'prism') && m.furyActive) {
+        if (m.furyWindup > 0) {
+          m.furyWindup = Math.max(0,m.furyWindup-dt);
+          if (m.furyWindup > 0) continue;
+        }
+        m.speed = (def.speed || 76) * (def.furySpeedMult || 1.75) * runPact.enemySpeed;
+        if (Math.random() < 0.45) {
+          particles.push({
+            x: m.x + (Math.random() - 0.5) * 22,
+            y: m.y + (Math.random() - 0.5) * 22,
+            vx: (Math.random() - 0.5) * 20,
+            vy: -15 - Math.random() * 25,
+            color: Math.random() > 0.5 ? '#f97316' : '#ef4444',
+            size: 3.5 + Math.random() * 3,
+            life: 0.28,
+            maxLife: 0.28
+          });
+        }
+      }
+
+      // ── MECÂNICA PURPLE: Dash lateral ágil & esquiva ativa de projéteis ──
+      if (m.canDash) {
+        if (m.isDashing) {
+          m.dashTimer -= dt;
+          m.x += m.dashVx * dt*gravitySlow;
+          m.y += m.dashVy * dt*gravitySlow;
+
+          // Rastro veloz de partículas roxas durante o impulso
+          if (Math.random() < 0.45) {
+            particles.push({
+              x: m.x + (Math.random() - 0.5) * 18,
+              y: m.y + (Math.random() - 0.5) * 18,
+              vx: -m.dashVx * 0.12,
+              vy: -m.dashVy * 0.12,
+              color: Math.random() > 0.4 ? '#c084fc' : '#a855f7',
+              size: 4 + Math.random() * 4,
+              life: 0.22,
+              maxLife: 0.22
+            });
+          }
+
+          if (m.dashTimer <= 0) {
+            m.isDashing = false;
+            m.dashCooldown = m.variant === 'prism' ? .35 + Math.random()*.30
+              : (def.dashCooldownMin || 1.8) + Math.random() * ((def.dashCooldownMax || 3.2) - (def.dashCooldownMin || 1.8));
+          }
+        } else {
+          m.dashCooldown -= dt;
+
+          // Reação de Esquiva Ativa: percebe projétil vindo em sua direção a menos de 190px
+          let dodgedShot = false;
+          if (m.dashCooldown <= 0.30 && dToPlayer > 70 && dToPlayer < 560) {
+            for (let pi = 0; pi < projectiles.length; pi++) {
+              const p = projectiles[pi];
+              const dxP = m.x - p.x;
+              const dyP = m.y - p.y;
+              const distP = Math.hypot(dxP, dyP);
+              if (distP < 190 && distP > 25) {
+                // Checa se o projétil viaja apontando para a slime (produto escalar positivo)
+                const dot = (p.vx * dxP + p.vy * dyP);
+                if (dot > 0) {
+                  // Esquiva perpendicular precisa à trajetória do projétil!
+                  const dodgeSide = Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2;
+                  const dodgeAngle = p.angle + dodgeSide;
+                  m.isDashing = true;
+                  BowAudio.play('dash');
+                  m.dashTimer = def.dashDuration || 0.28;
+                  const speed = (def.dashSpeed || 520) * runPact.enemySpeed;
+                  m.dashVx = Math.cos(dodgeAngle) * speed;
+                  m.dashVy = Math.sin(dodgeAngle) * speed;
+                  dodgedShot = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // Se não precisou esquivar de tiro, executa o dash lateral tático periódico
+          if (!dodgedShot && m.dashCooldown <= 0 && dToPlayer > 80 && dToPlayer < 500) {
+            m.isDashing = true;
+                  BowAudio.play('dash');
+            m.dashTimer = def.dashDuration || 0.28;
+            const perpAngle = Math.atan2(toCy, toCx) + (Math.random() > 0.5 ? Math.PI / 2 : -Math.PI / 2);
+            const speed = (def.dashSpeed || 520) * runPact.enemySpeed;
+            m.dashVx = Math.cos(perpAngle) * speed;
+            m.dashVy = Math.sin(perpAngle) * speed;
+          }
+        }
+        // Se estiver dashando, pula a movimentação normal
+        if (m.isDashing) {
+          m.jumpZ = 0;
+          if (dToPlayer <= (m.radius || 26) + 12 && m.jumpZ < 0.45) {
+            if (playerInvulnTimer <= 0) {
+              playerInvulnTimer = 0.8;
+              const dmgTaken = applyPlayerDamage(m.touchDamage || 14);
+              BowAudio.play('damage');
+              damageNumbers.push({ x: cx + (Math.random() - 0.5) * 20, y: cy - 30, text: `-${dmgTaken} HP`, color: '#ef4444', life: 0.9, maxLife: 0.9 });
+              
+              if (currentHp <= 0) triggerGameOver();
+            }
+            m.isDashing = false;
+            m.isRetreating = true;
+            m.isJumping = false;
+            m.jumpZ = 0;
+            continue;
+          }
+          continue; // pula movimentação normal enquanto dasha
+        }
+      }
+
+      // Gerenciamento de Salto (Só ocorre se a fase permitir!)
+      if (timeline.allowJump && (m.variant !== 'prism' || m.furyActive)) {
+        if (m.isJumping) {
+          m.jumpTimer += dt;
+          const p = Math.min(1.0, m.jumpTimer / m.jumpDuration);
+          m.jumpZ = Math.sin(p * Math.PI);
+
+          if (m.jumpTimer >= m.jumpDuration) {
+            m.isJumping = false;
+            m.jumpZ = 0;
+            m.jumpCooldown = m.variant === 'prism' ? .8 + Math.random()*.4
+              : (def.jumpCooldownMin || 2.5) + Math.random() * ((def.jumpCooldownMax || 4.5) - (def.jumpCooldownMin || 2.5));
+            m.squishTimer = 0.18;
+            spawnSlimeSplashParticles(m.x, m.y, m.radius);
+            playSlimeSplashSound();
+          }
+        } else {
+          m.jumpZ = 0;
+          m.jumpCooldown -= dt;
+          if (m.jumpCooldown <= 0 && dToPlayer > 70 && dToPlayer < 460) {
+            m.isJumping = true;
+            m.jumpTimer = 0;
+            m.jumpZ = 0;
+          }
+        }
+      } else {
+        m.isJumping = false;
+        m.jumpZ = 0;
+      }
+
+      const currentSpeed = m.isJumping ? m.speed * (m.jumpSpeedMult || 1.6)*gravitySlow : m.speed*gravitySlow;
+      const contactDist = (m.radius || 26) + 12;
+
+      if (dToPlayer > contactDist) {
+        // Desvio lateral individual diminui as filas sem impedir a aproximação.
+        m.travelAge=(m.travelAge||0)+dt;
+        if(m.travelSide===undefined)m.travelSide=Math.random()<.5?-1:1;
+        const lateral=dToPlayer>180&&!m.isJumping?Math.sin(m.travelAge*1.4+m.radius)*.38*m.travelSide:0;
+        const directionX=toCx/dToPlayer-toCy/dToPlayer*lateral,directionY=toCy/dToPlayer+toCx/dToPlayer*lateral;
+        const length=Math.hypot(directionX,directionY)||1;
+        m.x += directionX/length * currentSpeed * dt;
+        m.y += directionY/length * currentSpeed * dt;
+        m.angle=Math.atan2(directionY,directionX)-Math.PI/2;
+      } else {
+        // Slime encostou no herói!
+        if (m.jumpZ < 0.45) {
+          let damagedPlayer = false;
+          if (playerInvulnTimer <= 0) {
+            playerInvulnTimer = 0.8; // i-frames
+            const dmgTaken = applyPlayerDamage(m.touchDamage || 14);
+            damagedPlayer = dmgTaken > 0;
+              BowAudio.play('damage');
+
+            // Feedback de dano sofrido pelo herói
+            damageNumbers.push({
+              x: cx + (Math.random() - 0.5) * 20,
+              y: cy - 30,
+              text: `-${dmgTaken} HP`,
+              color: '#ef4444',
+              life: 0.9,
+              maxLife: 0.9
+            });
+            
+
+            // Checar Derrota do Jogador (Game Over)
+            if (currentHp <= 0) {
+              triggerGameOver();
+            }
+          }
+
+          if (m.type === 'gray') {
+            if (!damagedPlayer) continue;
+            m.grayForm = 'solid';
+          }
+          // Ao encostar no herói, dá as costas imediatamente e foge sumindo do mapa!
+          m.isRetreating = true;
+          m.isJumping = false;
+          m.jumpZ = 0;
+        }
+      }
+    }
+  }
+
+  // ── 8b. Atualizar Movimentação & Mecânicas das 3 Fases do Boss King Slime ──
+  if (bossPhaseActive && kingSlime && !kingSlime.isDefeated) {
+    kingSlime.animTimer += dt;
+    if (kingSlime.hitFlash > 0) kingSlime.hitFlash -= dt;
+
+    const toHeroX = cx - kingSlime.x;
+    const toHeroY = cy - kingSlime.y;
+    const distToHero = Math.hypot(toHeroX, toHeroY);
+    const contactDist = kingSlime.radius + 18;
+
+    // ─── COMPORTAMENTO NA FASE 1: O ENIGMA REAL (PUZZLE) ───
+    if (kingSlime.phase === 1) {
+      // Atualiza animação das slimes do puzzle
+      bossPuzzleSlimes.forEach(ps => {
+        ps.animTimer += dt;
+      });
+
+      if (bossPuzzleState === 'march_intro') {
+        bossPuzzleTimer += dt;
+        const marchDuration = 5.0; // Tempo em tela expandido para o jogador memorizar sem correria
+        const enterDuration = 1.0;
+        const enterProgress = Math.min(1.0, bossPuzzleTimer / enterDuration);
+
+        // Primeiro 1.0s: saltam na frente do King Slime
+        // Dos 1.0s aos 5.0s: onda rítmica ordenada para o jogador memorizar com clareza
+        bossPuzzleSlimes.forEach(ps => {
+          if (enterProgress < 1.0) {
+            ps.x = ps.startX + (ps.targetX - ps.startX) * enterProgress;
+            ps.y = ps.startY + (ps.targetY - ps.startY) * enterProgress;
+            ps.jumpZ = Math.sin(enterProgress * Math.PI) * 0.85;
+          } else {
+            ps.x = ps.targetX;
+            ps.y = ps.targetY;
+
+            // Onda rítmica sequencial destacando cada cor da esquerda para a direita
+            const waitTime = bossPuzzleTimer - enterDuration;
+            const waveIdx = (waitTime * 2.0) % 5;
+            const distFromWave = Math.abs(waveIdx - ps.orderIdx);
+            if (distFromWave < 0.6) {
+              ps.jumpZ = Math.sin((1 - distFromWave / 0.6) * Math.PI * 0.5) * 0.55;
+            } else {
+              ps.jumpZ = Math.abs(Math.sin(waitTime * 4)) * 0.12;
+            }
+          }
+          ps.angle = 0;
+        });
+
+        // Quando a apresentação na frente do Rei terminar: pulo em arco para o mapa!
+        if (bossPuzzleTimer >= marchDuration) {
+          bossPuzzleState = 'scatter';
+          bossPuzzleTimer = 0;
+          bossPuzzleSlimes.forEach(ps => {
+            ps.startX = ps.x;
+            ps.startY = ps.y;
+            ps.jumpZ = 0;
+          });
+          playSlimeSplashSound();
+        }
+      } else if (bossPuzzleState === 'scatter') {
+        bossPuzzleTimer += dt;
+        const jumpDuration = 1.0;
+        const progress = Math.min(1.0, bossPuzzleTimer / jumpDuration);
+
+        // Saltam da fila para as posições espalhadas na arena com arco bem visível
+        bossPuzzleSlimes.forEach(ps => {
+          ps.x = ps.startX + (ps.scatterX - ps.startX) * progress;
+          ps.y = ps.startY + (ps.scatterY - ps.startY) * progress;
+          ps.jumpZ = Math.sin(progress * Math.PI) * 1.35;
+        });
+
+        if (bossPuzzleTimer >= jumpDuration) {
+          bossPuzzleState = 'waiting_input';
+          bossPuzzleTimer = 0;
+          bossPuzzleSlimes.forEach(ps => {
+            ps.x = ps.scatterX;
+            ps.y = ps.scatterY;
+            ps.jumpZ = 0;
+            spawnSlimeSplashParticles(ps.x, ps.y, ps.radius);
+          });
+          playSlimeSplashSound();
+        }
+      } else if (bossPuzzleState === 'waiting_input') {
+        // King Slime avança lentamente em direção ao centro encarando o jogador
+        kingSlime.angle = Math.atan2(toHeroY, toHeroX) - Math.PI / 2;
+
+        if (distToHero > contactDist) {
+          kingSlime.x += (toHeroX / distToHero) * kingSlime.speed * dt;
+          kingSlime.y += (toHeroY / distToHero) * kingSlime.speed * dt;
+        } else {
+          // King Slime alcançou o jogador antes de resolverem o puzzle: TERREMOTO!
+          if (playerInvulnTimer <= 0) {
+            playerInvulnTimer = 1.0;
+            const dmgTaken = applyPlayerDamage(kingSlime.touchDamage || 32);
+            BowAudio.play('damage');
+            damageNumbers.push({
+              x: cx + (Math.random() - 0.5) * 24,
+              y: cy - 35,
+              text: `-${dmgTaken} HP`,
+              color: '#ef4444',
+              life: 1.0,
+              maxLife: 1.0
+            });
+            
+            screenShakeTimer = 0.75;
+            screenShakeIntensity = 12;
+            if (currentHp <= 0) triggerGameOver();
+          }
+
+          // Dá as costas e recua frustrado para tentar novamente
+          bossPuzzleState = 'failed_retreat';
+        }
+      } else if (bossPuzzleState === 'failed_retreat') {
+        // Dá as costas ao herói enquanto recua
+        const toStartX = kingSlime.startX - kingSlime.x;
+        const toStartY = kingSlime.startY - kingSlime.y;
+        const distStart = Math.hypot(toStartX, toStartY);
+        kingSlime.angle = Math.atan2(toStartY, toStartX) + Math.PI / 2;
+
+        if (distStart > 12) {
+          kingSlime.x += (toStartX / distStart) * (kingSlime.speed * 1.8) * dt;
+          kingSlime.y += (toStartY / distStart) * (kingSlime.speed * 1.8) * dt;
+        } else {
+          // Chegou à base: nova rodada do puzzle!
+          startBossPhase1Puzzle();
+        }
+      } else if (bossPuzzleState === 'success_retreat') {
+        // PUZZLE RESOLVIDO: King Slime atordoado recua de costas tomando 2x de dano!
+        kingSlime.vulnerableTimer -= dt;
+        const toStartX = kingSlime.startX - kingSlime.x;
+        const toStartY = kingSlime.startY - kingSlime.y;
+        const distStart = Math.hypot(toStartX, toStartY);
+        kingSlime.angle = Math.atan2(toStartY, toStartX) + Math.PI / 2;
+
+        if (distStart > 12) {
+          kingSlime.x += (toStartX / distStart) * (kingSlime.speed * 1.3) * dt;
+          kingSlime.y += (toStartY / distStart) * (kingSlime.speed * 1.3) * dt;
+        }
+
+        if (distStart <= 12 || kingSlime.vulnerableTimer <= 0) {
+          if (kingSlime.hp <= 1000) {
+            startBossPhase2();
+          } else {
+            startBossPhase1Puzzle();
+          }
+        }
+      }
+    }
+
+    // ─── COMPORTAMENTO NA FASE 2: INVASÃO SINISTRA (LIMPEZA DE ARENA) ───
+    else if (kingSlime.phase === 2) {
+      kingSlime.angle = Math.atan2(toHeroY, toHeroX) - Math.PI / 2;
+
+      // Se o escudo estiver ativo: checa se o jogador limpou o mapa de slimes
+      if (!bossPhase2IsVulnerable) {
+        if (monsters.length === 0 && !pendingWaveSpawns.some(task=>task.boss===kingSlime)) {
+          // MAPA 100% LIMPO: Escudo quebra e King Slime fica vulnerável por 3.8s!
+          bossPhase2IsVulnerable = true;
+          BowAudio.play('shield_break');
+          bossPhase2VulnerableTimer = 3.8;
+          screenShakeTimer = 0.5;
+          screenShakeIntensity = 9;
+          
+          playCountdownBeep(true);
+        }
+      } else {
+        // Janela de vulnerabilidade aberta
+        bossPhase2VulnerableTimer -= dt;
+
+        if (bossPhase2VulnerableTimer <= 0) {
+          if (kingSlime.hp <= 500) {
+            startBossPhase3();
+          } else {
+            // Escudo se regenera e convoca a próxima invasão
+            bossPhase2IsVulnerable = false;
+            
+            spawnBossPhase2Wave();
+          }
+        }
+      }
+    }
+
+    // ─── FASE 3: sequência apresentada, órbita e salto ao esgotar o tempo ───
+    else if (kingSlime.phase === 3) {
+      BossFinalPhase.step(kingSlime,dt,canvas.width,canvas.height,{
+        warning:()=>BowAudio.play('fury'),
+        orbit:()=>{projectiles=[];},
+        round:()=>{projectiles=[];spawnBossRing();},
+        damage:(damage)=>{
+          if(playerInvulnTimer>0||isGameOver)return;
+          playerInvulnTimer=.8;const dealt=applyPlayerDamage(damage);BowAudio.play('damage');
+          screenShakeTimer=.6;screenShakeIntensity=12;
+          damageNumbers.push({x:cx,y:cy-35,text:`-${dealt} HP`,color:'#ef4444',life:1,maxLife:1});
+          if(currentHp<=0)triggerGameOver();
+        }
+      });
+      const state=kingSlime.phase3;
+      bossRingIsVulnerable=state.mode==='exposed';bossRingVulnerableTimer=bossRingIsVulnerable?state.timer:0;
+      bossRingAngle=state.ringAngle;
+      const radius=BossFinalPhase.geometry(canvas.width,canvas.height).ringRadius;
+      bossRingSlimes.forEach(rs=>{
+        rs.radius=radius;rs.animTimer+=dt;
+        if(state.mode==='present'){
+          const index=state.sequence.indexOf(rs.type),spacing=Math.min(64,canvas.width/6);
+          rs.x=cx+(index-(state.sequence.length-1)/2)*spacing;rs.y=kingSlime.y+100;
+        }else{
+          rs.x=kingSlime.x+Math.cos(bossRingAngle+rs.angleOffset)*radius;
+          rs.y=kingSlime.y+Math.sin(bossRingAngle+rs.angleOffset)*radius;
+        }
+      });
+    }
+  }
+
+  // 9. Atualizar Textos Flutuantes de Dano
+  for (let di = damageNumbers.length - 1; di >= 0; di--) {
+    const dn = damageNumbers[di];
+    dn.life -= dt;
+    if (dn.life <= 0) {
+      damageNumbers.splice(di, 1);
+      continue;
+    }
+    dn.y -= dt * 32; // Sobe suavemente
+  }
+
+  // 10. Atualizar Partículas
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.life -= dt;
+    if (pt.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    pt.x += pt.vx * dt;
+    pt.y += pt.vy * dt;
+    pt.vx *= 0.90;
+    pt.vy *= 0.90;
+  }
+}
+
+function drawChargeAura(ctx, width, height, color) {
+  const progress = chargeElapsed / 4;
+  const ready = chargedShotTier(chargeElapsed);
+  const pulse = .93 + Math.sin(chargeElapsed * 16) * .07;
+  ctx.save();
+  ctx.scale((width*.55 + 7 + progress*9)*pulse,Math.max(8,height*.54 + 4 + progress*7)*pulse);
+  const glow = ctx.createRadialGradient(0,0,0,0,0,1);
+  glow.addColorStop(0,ready ? '#fff1bf' : color);
+  glow.addColorStop(.36,color);
+  glow.addColorStop(1,'transparent');
+  ctx.globalAlpha *= .22 + progress*.34 + (ready ? .12 : 0);
+  ctx.fillStyle = glow;
+  ctx.fillRect(-1,-1,2,2);
+  ctx.restore();
+}
+
+function draw() {
+  BowAudio.syncVortex(vocationSpells.effects.some(e=>e.id==='dark_vortex'&&e.age<e.duration),isPaused||audioSettingsOpen||isGameOver);
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // ─── 0. TREMIDOR DE TELA RETRÔ (SCREEN SHAKE) ───
+  let shakeX = 0, shakeY = 0;
+  if (screenShakeTimer > 0) {
+    shakeX = (Math.random() - 0.5) * screenShakeIntensity;
+    shakeY = (Math.random() - 0.5) * screenShakeIntensity;
+  }
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+  groundSurface.beginFrame(ctx);
+
+  // ─── 1. MAPA DE FUNDO — CROSSFADE DIA→NOITE & ARENA DO REI SLIME ───
+  // Função auxiliar: desenha um estágio de mapa (base) em escala cover, retorna {sw,sh,sx,sy}
+  function drawMapStage(stageIdx, alpha) {
+    const img = mapStageBaseImgs[stageIdx];
+    if (!img || !img.complete || !img.naturalWidth) return null;
+    const scale = ravenMode?Math.max(w/img.naturalWidth,h/(img.naturalHeight*.88)):Math.max(w / img.naturalWidth, h / img.naturalHeight);
+    const sw = img.naturalWidth * scale;
+    const sh = img.naturalHeight * scale;
+    const sx = (w - sw) / 2;
+    const framing = ravenMode?RavenStage.framing(w,h,img.naturalWidth,img.naturalHeight):null;
+    const sy = framing?framing.sy:(h - sh) / 2;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, sx, sy, sw, sh);
+    ctx.globalAlpha = 1;
+    return { sw, sh, sx, sy };
+  }
+
+  let mapSw = w, mapSh = h, mapSx = 0, mapSy = 0;
+
+  if (bossPhaseActive) {
+    // ── ARENA DO KING SLIME: Clareira Encantada na Floresta King Slime ──
+    const img = kingSlimeBaseImg;
+    if (img && img.complete && img.naturalWidth) {
+      const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+      mapSw = img.naturalWidth * scale;
+      mapSh = img.naturalHeight * scale;
+      mapSx = (w - mapSw) / 2;
+      mapSy = (h - mapSh) / 2;
+      ctx.drawImage(img, mapSx, mapSy, mapSw, mapSh);
+
+      // Cutscene de 24 frames de apresentação e despertar do Rei Slime
+      if (bossIntroActive) {
+        const introProg = Math.min(1.0, bossIntroTimer / 2.8);
+        const fIdx = Math.min(KING_SLIME_INTRO_FRAME_COUNT - 1, Math.floor(introProg * KING_SLIME_INTRO_FRAME_COUNT));
+        const introImg = kingSlimeIntroFrames[fIdx];
+        if (introImg && introImg.complete && introImg.naturalWidth) {
+          ctx.drawImage(introImg, mapSx, mapSy, mapSw, mapSh);
+        }
+      } else {
+        // Pós-apresentação: mantém o frame 24 com o portal e iluminação mística
+        const lastFrame = kingSlimeIntroFrames[23];
+        if (lastFrame && lastFrame.complete && lastFrame.naturalWidth) {
+          ctx.drawImage(lastFrame, mapSx, mapSy, mapSw, mapSh);
+        }
+      }
+    }
+  } else {
+    const nextStage = Math.min(currentMapStage + 1, MAP_STAGES.length - 1);
+    const baseResult = drawMapStage(currentMapStage, 1.0);
+    if (baseResult) { mapSw = baseResult.sw; mapSh = baseResult.sh; mapSx = baseResult.sx; mapSy = baseResult.sy; }
+
+    if (mapTransitionActive && nextStage !== currentMapStage) {
+      const easedAlpha = mapTransitionAlpha < 0.5
+        ? 2 * mapTransitionAlpha * mapTransitionAlpha
+        : 1 - Math.pow(-2 * mapTransitionAlpha + 2, 2) / 2;
+      drawMapStage(nextStage, easedAlpha);
+    }
+  }
+
+  // Vinheta escura nas bordas — fica mais intensa à noite
+  const vigIntensity = 0.55 + currentMapStage * 0.08 + (mapTransitionActive ? mapTransitionAlpha * 0.08 : 0);
+  const vig = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.28, cx, cy, Math.max(w, h) * 0.75);
+  vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  vig.addColorStop(1, `rgba(4, 6, 12, ${Math.min(0.88, vigIntensity)})`);
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, w, h);
+
+  if (runPact.nearDamage !== 1 || runPact.farDamage !== 1) {
+    ctx.save();ctx.strokeStyle='rgba(245,200,66,.3)';ctx.lineWidth=1;
+    ctx.setLineDash([5,8]);ctx.beginPath();ctx.arc(w/2,h/2,220,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
+  FrogBonus.draw(ctx, frogEncounter);
+  CrowBonus.draw(ctx,crowEncounter);
+  MerchantDiscovery.draw(ctx,merchantEncounter);
+  BonsaiDiscovery.draw(ctx,bonsaiEncounter);
+  ExpansionContent.draw(ctx,expansionScene,groundSurface);
+  if(egyptianMode||expansionScene.phoenix){ctx.save();ctx.font='12px monospace';ctx.textAlign='center';ctx.fillStyle='#ead5a0';ctx.fillText(BowI18n.t('expansion.pending','INTEGRAÇÃO VISUAL · MECÂNICAS PENDENTES'),w/2,h-24);ctx.restore();}
+  OrbDrops.draw(ctx,orbDrops,egyptianMode?ExpansionContent.ITEMS:ravenMode?{...BowTeachings.ORBS,...RavenStage.FEATHERS}:BowTeachings.ORBS,groundSurface);
+  if(ravenMode)for(const m of monsters)RavenStage.telegraph(ctx,m,cx,cy);
+
+  // ─── 2. MONSTROS (SLIMES COM PULO, SOMBRA DINÂMICA E MECÂNICAS ESPECIAIS) ───
+  for (const m of monsters) {
+    if(m.kind==='raven'){RavenStage.draw(ctx,m,groundSurface);continue;}
+    ctx.save();
+    ctx.translate(m.x, m.y);
+
+    const jumpZ = m.jumpZ || 0;
+
+    const translucent = m.grayForm === 'translucent';
+    if (translucent) ctx.globalAlpha *= .18;
+
+    GroundShadows.creature(ctx,0,m.shadowY || 24,m.shadowRx || 28,m.shadowRy || 10,jumpZ);
+    // Rotação do monstro na direção em que se desloca para o centro
+    ctx.save();
+    const visualOffsetY = - jumpZ * 26;
+    ctx.translate(0, visualOffsetY);
+    ctx.rotate(m.angle);
+
+    // Selecionar o frame animado do ciclo correto por tipo de slime
+    let currentFrame;
+    if (m.grayForm === 'goo' && gooSombrioImg.complete && gooSombrioImg.naturalWidth > 0) {
+      // Forma especial: "Goo Sombrio com Olhos Luminosos" (Imortal)
+      currentFrame = gooSombrioImg;
+    } else if (m.variant === 'prism') {
+      currentFrame = getSlimeSpriteFrame(m.prismColor,0);
+    } else if (COLORED_SLIME_TYPES.includes(m.type)) {
+      const colorFrameIdx = Math.floor(m.animTimer * COLORED_SLIME_FPS) % COLORED_SLIME_FRAME_COUNT;
+      currentFrame = slimeColorFrames[m.type] ? slimeColorFrames[m.type][colorFrameIdx] : null;
+    } else {
+      const greenFrameIdx = Math.floor(m.animTimer * SLIME_FPS) % SLIME_FRAME_COUNT;
+      currentFrame = slimeFrames[greenFrameIdx];
+    }
+
+    // Escala dinâmica durante o salto
+    const jumpScale = 1.0 + jumpZ * (m.jumpScaleBonus || 0.45);
+
+    // Efeito squish elástico ao aterrissar
+    let squishScaleX = 1.0;
+    let squishScaleY = 1.0;
+    if (m.squishTimer > 0) {
+      const squishProg = m.squishTimer / 0.18;
+      squishScaleX = 1.0 + squishProg * 0.30;
+      squishScaleY = 1.0 - squishProg * 0.24;
+    }
+
+    const sw = (m.size || 84) * jumpScale * squishScaleX;
+    const sh = (m.size || 84) * jumpScale * squishScaleY;
+
+    const fallbackColor = { blue: '#38bdf8', purple: '#a855f7', gray: '#94a3b8', red: '#ef4444' }[m.type] || '#22c55e';
+
+    if (currentFrame && currentFrame.complete && currentFrame.naturalWidth > 0) {
+      if (m.hitFlash > 0) {
+        ctx.filter = 'brightness(3) contrast(1.5)';
+      }
+      ctx.drawImage(currentFrame, -sw / 2, -sh / 2, sw, sh);
+      ctx.filter = 'none';
+    } else {
+      ctx.fillStyle = m.hitFlash > 0 ? '#fff' : fallbackColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, m.radius * jumpScale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (m.shielded && blueSlimeShieldImg.naturalWidth > 0) {
+      ctx.filter = 'none';
+      const shieldSize = Math.max(sw, sh) * 1.16 + 8;
+      ctx.drawImage(blueSlimeShieldImg, -shieldSize / 2, -shieldSize / 2, shieldSize, shieldSize);
+    }
+
+    ctx.restore(); // Restaura rotação para manter a barra de vida perfeitamente horizontal
+
+    if (!translucent) {
+      const barW = m.barW || 44;
+      const barH = m.size > 100 ? 7 : (m.size < 60 ? 4 : 5);
+      const barY = (m.barY || -48) + visualOffsetY;
+      const hpRatio = Math.max(0, m.hp / m.maxHp);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillRect(-barW / 2 - 1, barY - 1, barW + 2, barH + 2);
+      ctx.fillStyle = ((m.type === 'red' || m.variant === 'prism') && m.furyActive) ? '#f97316' : (hpRatio > 0.4 ? '#22c55e' : '#ef4444');
+      ctx.fillRect(-barW / 2, barY, barW * hpRatio, barH);
+    }
+
+    ctx.restore();
+  }
+
+  // ─── 3. MIRA LASER PONTILHADA 360 GRAUS ───
+  ctx.save();
+  ctx.strokeStyle = 'rgba(245, 200, 66, 0.22)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 10]);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(playerAngle) * 500, cy + Math.sin(playerAngle) * 500);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  drawArcherEffects();
+
+  // ─── 4. PROJÉTEIS (ESPADAS / VARINHAS / PÁSSAROS / FLECHAS) ───
+  for (const p of projectiles) {
+    if(p.invisible)continue;
+    ctx.save();
+    const leap=p.leap?Math.sin(Math.min(1,(p.age||0)/.55)*Math.PI)*38:0;
+    const shadowLength=p.leap?30:p.berserk?40:p.spellId==='piercing_sword'?34:18;
+    groundSurface.paint(ctx,()=>GroundShadows.oval(ctx,p.x,p.y+14,shadowLength,p.leap?9:5,.37,p.angle));
+    ctx.translate(p.x, p.y-leap);
+    if(p.chargeScale)ctx.scale(p.chargeScale,p.chargeScale);
+    ctx.rotate(p.angle+(p.spellId==='spectral_pack'||p.spellId==='ancestral_spirit'?-Math.PI/2:0));
+
+    const sImg = p.spellId?spellImages[p.spellId]:p.berserk?spellImages.fury:shotImages[p.voc];
+    const cfg = VOCATION_CONFIG[p.voc];
+
+    if (sImg && sImg.complete && sImg.naturalWidth > 0) {
+      const sw = p.spellId?(p.spellId==='spectral_pack'?190:p.spellId==='ancestral_spirit'?210:p.spellId==='extermination'||p.spellId==='piercing_sword'?145:100):p.berserk?150:sImg.naturalWidth * cfg.shotScale;
+      const sh = p.spellId?sw*sImg.naturalHeight/sImg.naturalWidth:p.berserk?150*sImg.naturalHeight/sImg.naturalWidth:sImg.naturalHeight * cfg.shotScale;
+
+      // Glow suave ao redor do projétil
+      ctx.shadowColor = cfg.color;
+      ctx.shadowBlur = 10;
+      ctx.drawImage(sImg, -sw / 2, -sh / 2, sw, sh);
+      ctx.shadowBlur = 0;
+    } else {
+      // Fallback simples
+      ctx.fillStyle = cfg.color;
+      ctx.fillRect(-15, -3, 30, 6);
+    }
+
+    ctx.restore();
+  }
+
+  // ─── 5. PARTÍCULAS / FAÍSCAS ───
+  for (const pt of particles) {
+    const alpha = pt.life / pt.maxLife;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = pt.color;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // ─── 6. PERSONAGEM NO CENTRO (ROTACIONANDO 360 COM RECUO) ───
+  ctx.save();
+  // Posição com recuo na direção oposta ao disparo
+  const recoilX = -Math.cos(playerAngle) * recoil;
+  const recoilY = -Math.sin(playerAngle) * recoil;
+  ctx.translate(cx + recoilX, cy + recoilY);
+
+  const hImg = vocationSpells.berserk?VocationSpells.images('fury_body')[vocationSpells.furyFrame]:heroImages[currentVocation];
+  const heroOvImg = vocationSpells.berserk?VocationSpells.images('fury_overlay')[vocationSpells.furyFrame]:heroOverlayImages[currentVocation];
+  const targetH = 111;
+  groundSurface.paint(ctx,()=>GroundShadows.hero(ctx,hImg,heroOvImg,targetH,playerAngle + Math.PI / 2));
+
+  // Piscar se estiver temporariamente invulnerável (i-frames)
+  if (playerInvulnTimer > 0 && Math.floor(playerInvulnTimer * 18) % 2 === 0) {
+    ctx.globalAlpha = 0.35;
+  }
+
+  // Rotação: alinha o Norte da imagem original (onde fica o arco/flecha) diretamente com a mira do mouse
+  ctx.rotate(playerAngle + Math.PI / 2);
+
+  let targetW = 0;
+  if (hImg && hImg.complete && hImg.naturalWidth > 0) {
+    // Escala ideal de visualização no centro (+10%)
+    targetW = (hImg.naturalWidth / hImg.naturalHeight) * targetH;
+
+    // 1º: Desenhar a camada base do herói (corpo / cabeça / pés)
+    ctx.drawImage(hImg, -targetW / 2, -targetH / 2, targetW, targetH);
+  }
+
+  // ─── 2º: PROJÉTIL ACOPLADO NA CORDA DO ARCO (NOCK / PRONTO PARA DISPARO) ───
+  // Fica entre a base do corpo e a sobreposição (braço/arco/capuz), garantindo profundidade perfeita!
+  const heroCfg = VOCATION_CONFIG[currentVocation];
+  const heroSImg = vocationSpells.berserk?spellImages.fury:shotImages[currentVocation];
+  const maxCooldown = 1 / (heroCfg.fireRate * attackSpeedMultiplier * vocationSpells.attackRate * (1 + .08 * rank('M02')));
+  const cooldownProgress = shootCooldown > 0 ? (1 - Math.min(1, shootCooldown / maxCooldown)) : 1;
+
+  const charging = chargeElapsed !== null;
+  if (heroSImg && heroSImg.complete && heroSImg.naturalWidth > 0 && (charging || freeShot || currentResource >= shotCost(heroCfg))) {
+    if (charging || cooldownProgress > 0.35) {
+      ctx.save();
+      const pullOffset = charging ? 0 : (1 - cooldownProgress) * 14;
+      const forwardDist = -heroCfg.bowForwardOffset + pullOffset;
+      const lateralDist = heroCfg.bowLateralOffset;
+
+      ctx.translate(lateralDist, forwardDist);
+      ctx.rotate(-Math.PI / 2);
+
+      const heroSw = vocationSpells.berserk?150:heroSImg.naturalWidth * heroCfg.shotScale;
+      const heroSh = vocationSpells.berserk?150*heroSImg.naturalHeight/heroSImg.naturalWidth:heroSImg.naturalHeight * heroCfg.shotScale;
+
+      if (charging) drawChargeAura(ctx,heroSw,heroSh,heroCfg.color);
+      const nockAlpha = charging ? 1 : Math.min(1, (cooldownProgress - 0.35) / 0.35);
+      ctx.globalAlpha *= nockAlpha;
+      ctx.shadowColor = heroCfg.color;
+      ctx.shadowBlur = charging ? 10 + chargeElapsed*3 : 6;
+      ctx.drawImage(heroSImg, -heroSw / 2, -heroSh / 2, heroSw, heroSh);
+
+      ctx.restore();
+    }
+  }
+
+  // ─── 3º: SOBREPOSIÇÃO DO PERSONAGEM (BRAÇOS / ARCO / DETALHES FRONTAIS) ───
+  // Desenha por cima do projétil encaixado, escondendo qualquer parte que ficava sobre a cabeça
+  if (heroOvImg && heroOvImg.complete && heroOvImg.naturalWidth > 0 && targetW > 0) {
+    ctx.drawImage(heroOvImg, -targetW / 2, -targetH / 2, targetW, targetH);
+  }
+
+  ctx.restore();
+
+  // Royal shields on the near side pass in front of the hero; all other spells stay in their original layer.
+  if(currentVocation==='Knight')vocationSpells.draw(ctx,groundSurface,'front');
+
+  // ─── 2b. SLIMES DO PUZZLE (FASE 1) ───
+  if (bossPhaseActive && kingSlime && kingSlime.phase === 1 && !bossIntroActive) {
+    bossPuzzleSlimes.forEach((ps) => {
+      if (ps.solved) return;
+      ctx.save();
+      ctx.translate(ps.x, ps.y);
+
+      const pJumpZ = ps.jumpZ || 0;
+      const pScale = 1.0 + pJumpZ * 0.35;
+
+      GroundShadows.creature(ctx,0,18,ps.radius*.95,ps.radius*.40,pJumpZ);
+
+      // Elevação do salto
+      ctx.translate(0, -pJumpZ * 36);
+
+      const pFrame = getSlimeSpriteFrame(ps.type, ps.animTimer);
+      const psw = ps.size * pScale;
+      const psh = ps.size * pScale;
+
+      if (pFrame && pFrame.complete && pFrame.naturalWidth > 0) {
+        ctx.drawImage(pFrame, -psw / 2, -psh / 2, psw, psh);
+      } else {
+        ctx.fillStyle = SLIME_TYPE_COLORS[ps.type] || '#22c55e';
+        ctx.beginPath();
+        ctx.arc(0, 0, ps.radius * pScale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    });
+
+
+  }
+
+  // ─── 2c. BOSS KING SLIME — Desenhado com efeitos específicos por fase ───
+  if (bossPhaseActive && kingSlime && !bossIntroActive) {
+    ctx.save();
+    ctx.translate(kingSlime.x, kingSlime.y);
+
+    const kJumpZ  = kingSlime.jumpZ  || 0;
+    const kJumpSc = 1.0 + kJumpZ * 0.30;
+
+    GroundShadows.creature(ctx,0,kingSlime.shadowY || 62,kingSlime.shadowRx || 85,kingSlime.shadowRy || 28,kJumpZ,.58);
+
+    ctx.save();
+    const kOffY = -kJumpZ * 45;
+    ctx.translate(0, kOffY);
+    ctx.rotate(kingSlime.angle);
+
+    const ksw = kingSlime.size * kJumpSc;
+    const ksh = kingSlime.size * kJumpSc;
+    const kFrameIdx = Math.floor(kingSlime.animTimer * 12) % KING_SLIME_MOB_FRAME_COUNT;
+    const kFrame = kingSlimeMobFrames[kFrameIdx];
+
+    // Se estiver vulnerável (puzzle resolvido, mapa limpo ou anel quebrado), pulsa em destaque
+    const isVulnerableNow = (kingSlime.phase === 1 && bossPuzzleState === 'success_retreat') ||
+                            (kingSlime.phase === 2 && bossPhase2IsVulnerable) ||
+                            (kingSlime.phase === 3 && kingSlime.phase3?.mode==='exposed');
+
+    if (kingSlime.hitFlash > 0) {
+      ctx.filter = 'brightness(3) contrast(1.5)';
+    } else if (isVulnerableNow && Math.floor(Date.now() / 120) % 2 === 0) {
+      ctx.filter = 'brightness(1.4) sepia(0.6) hue-rotate(5deg)';
+    }
+
+    if (kFrame && kFrame.complete && kFrame.naturalWidth > 0) {
+      ctx.drawImage(kFrame, -ksw / 2, -ksh / 2, ksw, ksh);
+    } else {
+      ctx.fillStyle = kingSlime.hitFlash > 0 ? '#fff' : '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(0, 0, kingSlime.radius * kJumpSc, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.filter = 'none';
+    if (kingSlime.phase === 2 && !bossPhase2IsVulnerable && kingSlimeShieldImg.naturalWidth > 0) {
+      const shieldSize = ksw * 1.18;
+      ctx.globalAlpha *= 0.72;
+      ctx.drawImage(kingSlimeShieldImg, -shieldSize / 2, -shieldSize / 2, shieldSize, shieldSize);
+    }
+    ctx.restore(); // desfaz rotação
+
+    ctx.restore(); // desfaz translate do king slime
+  }
+
+  // ─── 2d. ANEL ORBITAL DE SLIMES (FASE 3) ───
+  if (bossPhaseActive && kingSlime && kingSlime.phase === 3 && bossRingSlimes.length > 0 && !bossIntroActive && ['present','input'].includes(kingSlime.phase3?.mode)) {
+    bossRingSlimes.forEach(rs => {
+      ctx.save();
+      ctx.translate(rs.x, rs.y);
+
+      GroundShadows.creature(ctx,0,14,rs.hitRadius*.9,rs.hitRadius*.45,0);
+
+      // Linha de energia mística orbital conectando ao centro do Rei
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(kingSlime.x - rs.x, kingSlime.y - rs.y);
+      ctx.stroke();
+
+      const rFrame = getSlimeSpriteFrame(rs.type,rs.animTimer);
+      if (rFrame && rFrame.complete && rFrame.naturalWidth > 0) {
+        ctx.drawImage(rFrame, -rs.size / 2, -rs.size / 2, rs.size, rs.size);
+      } else {
+        ctx.fillStyle = SLIME_TYPE_COLORS[rs.type] || '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(0, 0, rs.hitRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    });
+  }
+
+  // ─── 7. SOBREPOSIÇÃO DO CENÁRIO (COPAS DAS ÁRVORES & BORDAS) — CROSSFADE ───
+  // Desenhado por cima dos monstros e projéteis para dar profundidade
+  {
+    if (bossPhaseActive) {
+      // Arena do King Slime — sobreposição noturna da nova clareira
+      const ovImg = kingSlimeOverlayImg;
+      if (ovImg && ovImg.complete && ovImg.naturalWidth) {
+        ctx.globalAlpha = 1.0;
+        ctx.drawImage(ovImg, mapSx, mapSy, mapSw, mapSh);
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      const drawOv = (stageIdx, alpha) => {
+        const img = mapStageOverlayImgs[stageIdx];
+        if (!img || !img.complete || !img.naturalWidth) return;
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(img, mapSx, mapSy, mapSw, mapSh);
+        ctx.globalAlpha = 1;
+      };
+      drawOv(currentMapStage, 1.0);
+      if (mapTransitionActive) {
+        const nextSt = Math.min(currentMapStage + 1, MAP_STAGES.length - 1);
+        const ea = mapTransitionAlpha < 0.5
+          ? 2 * mapTransitionAlpha * mapTransitionAlpha
+          : 1 - Math.pow(-2 * mapTransitionAlpha + 2, 2) / 2;
+        drawOv(nextSt, ea);
+      }
+    }
+  }
+
+  // Rain on the plateau stays visible above its foreground vegetation.
+  if (ravenMode && currentVocation === 'Archer') drawArrowRain();
+
+  // ─── 8. NÚMEROS FLUTUANTES DE DANO ───
+  for (const dn of damageNumbers) {
+    const alpha = Math.max(0, dn.life / dn.maxLife);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold 11px "Press Start 2P", monospace';
+    ctx.fillStyle = dn.color;
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 5;
+    ctx.textAlign = 'center';
+    ctx.fillText(dn.text, dn.x, dn.y);
+    ctx.restore();
+  }
+
+  // ─── 9. BANNER RETRÔ DE ANÚNCIO DE FASE ───
+  if (bannerTimer > 0) {
+    const alpha = Math.min(1.0, bannerTimer * 2.0);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const bannerH = 64;
+    const bannerY = 100;
+    const bannerW=Math.min(560,w-32),bannerX=(w-bannerW)/2;
+    ctx.fillStyle = 'rgba(7, 9, 15, 0.88)';
+    ctx.fillRect(bannerX, bannerY, bannerW, bannerH);
+    ctx.strokeStyle = '#f5c842';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bannerX, bannerY, bannerW, bannerH);
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold '+Math.min(11,Math.max(6,w/100))+'px "Press Start 2P", monospace';
+    ctx.fillStyle = '#f5c842';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 8;
+    ctx.fillText(bannerTitle, cx, bannerY + 26);
+
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#93c5fd';
+    ctx.fillText(bannerSubtitle, cx, bannerY + 48);
+    ctx.restore();
+  }
+
+  // Contagem inicial discreta, sem cobrir o cenário ou repetir a vocação.
+  if(countdownActive&&countdownTimer>.9){
+    const number=Math.ceil(countdownTimer-.9),progress=(countdownTimer-.9)%1;
+    ctx.save();ctx.translate(cx,cy-100);ctx.fillStyle='#080c16bb';ctx.beginPath();ctx.arc(0,0,29,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#e3c26999';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,29,-Math.PI/2,-Math.PI/2+progress*Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#ecd49c';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='18px "Press Start 2P",monospace';ctx.fillText(number,0,1);ctx.restore();
+  }
+
+  // ─── 11. MIRA NO CURSOR DO MOUSE ───
+  ctx.save();
+  ctx.translate(mouse.x, mouse.y);
+  ctx.strokeStyle = 'rgba(245, 200, 66, 0.7)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, -14); ctx.lineTo(0, 14);
+  ctx.moveTo(-14, 0); ctx.lineTo(14, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  // ─── 12. BARRA DE VIDA ÉPICA DO BOSS (canto inferior da tela) ───
+  if (bossPhaseActive && kingSlime && !bossIntroActive) {
+    const bossBarW = Math.min(w * 0.72, 640);
+    const bossBarH = 22;
+    const bossBarX = (w - bossBarW) / 2;
+    const bossBarY = h - 54;
+    const hpRatio = Math.max(0, kingSlime.hp / kingSlime.maxHp);
+
+    // Fundo da barra com borda dourada brilhante
+    ctx.save();
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = 'rgba(8, 12, 22, 0.92)';
+    ctx.fillRect(bossBarX - 4, bossBarY - 22, bossBarW + 8, bossBarH + 30);
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bossBarX - 4, bossBarY - 22, bossBarW + 8, bossBarH + 30);
+    ctx.shadowBlur = 0;
+
+    // Nome do Boss e Fase Atual
+    let phaseName = 'FASE 1: O ENIGMA REAL';
+    if (kingSlime.phase === 2) phaseName = 'FASE 2: INVASAO SINISTRA';
+    else if (kingSlime.phase === 3) phaseName = 'FASE 3: FRENESI FINAL';
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 8px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(`** REI SLIME — ${phaseName} **`, w / 2, bossBarY - 8);
+
+    // Trilho vazio
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(bossBarX, bossBarY, bossBarW, bossBarH);
+
+    // Barra cheia com degradê épico dourado→verde→vermelho
+    if (hpRatio > 0) {
+      const barGrad = ctx.createLinearGradient(bossBarX, 0, bossBarX + bossBarW * hpRatio, 0);
+      if (hpRatio > 0.55) {
+        barGrad.addColorStop(0, '#4ade80');
+        barGrad.addColorStop(1, '#22c55e');
+      } else if (hpRatio > 0.25) {
+        barGrad.addColorStop(0, '#f59e0b');
+        barGrad.addColorStop(1, '#fbbf24');
+      } else {
+        barGrad.addColorStop(0, '#ef4444');
+        barGrad.addColorStop(1, '#dc2626');
+      }
+      ctx.fillStyle = barGrad;
+      ctx.fillRect(bossBarX, bossBarY, bossBarW * hpRatio, bossBarH);
+
+      // Brilho superior tipo gloss
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.fillRect(bossBarX, bossBarY, bossBarW * hpRatio, bossBarH / 2);
+    }
+
+    // Contorno da barra
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(bossBarX, bossBarY, bossBarW, bossBarH);
+
+    // HP numérico
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${Math.max(0, Math.round(kingSlime.hp))} / ${kingSlime.maxHp}`, w / 2, bossBarY + 15);
+
+    ctx.restore();
+
+    // Vitória: flash dourado sobre a tela quando o boss morre
+    if (kingSlime.isDefeated) {
+      kingSlime.defeatTimer = (kingSlime.defeatTimer || 0) + 0.016;
+      const flashAlpha = Math.max(0, 0.55 * (1 - kingSlime.defeatTimer / 4.0));
+      ctx.save();
+      ctx.globalAlpha = flashAlpha;
+      ctx.fillStyle = 'rgba(251, 191, 36, 1)';
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+
+      // Mensagem épica de vitória
+      if (kingSlime.defeatTimer > 0.5 && kingSlime.defeatTimer < 4.5) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 20px "Press Start 2P", monospace';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 20;
+        ctx.fillText('VITORIA LENDARIA!', cx, cy - 18);
+        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.fillStyle = '#fde68a';
+        ctx.fillText('O REI DOS SLIMES FOI DESTRONADO!', cx, cy + 14);
+        ctx.restore();
+      }
+    }
+  }
+
+  spellAim.draw(ctx);
+  // Fecha o save do screen shake
+  ctx.restore();
+}
+
+function advanceJourney(dt) {
+  if(journeyRate()===2){
+    update(dt,dt/2);
+    update(dt*journeyRate()/2,dt/2);
+  }else update(dt);
+}
+
+function loop(ts) {
+  const elapsed = Math.max(0,(ts - lastTime) / 1000);
+  const dt = Math.min(elapsed, 0.05);
+  lastTime = ts;
+
+  recordPlayedTime(elapsed);
+  advanceJourney(dt);
+  if (!modifierDialog.open) draw();
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(ts => {
+  lastTime = ts;
+  requestAnimationFrame(loop);
+});
+</script>
+<script src="js/game-screens.js"></script>
+<script src="js/arena-boot.js"></script>
+
+<div class="demo-label">BOW RAMPAGE · DEMO DE TESTE</div></body>
+</html>

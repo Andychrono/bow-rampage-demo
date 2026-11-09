@@ -1,0 +1,12 @@
+#arena-transition[hidden]{display:none!important}
+#arena-transition{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#182a1de8,#070d12f5),url('../assets/maps/character-selection-background.webp') center/cover no-repeat;color:#e9d39c;opacity:1;transition:opacity 220ms ease-out;font-family:'Press Start 2P',monospace}
+.arena-preparation{width:min(420px,85vw);padding:28px;text-align:center;border-top:1px solid #a88a48;border-bottom:1px solid #a88a48;background:#09101988}
+.arena-preparation small{display:block;font-size:7px;letter-spacing:3px;color:#aeb99a;margin-bottom:22px;line-height:1.8}
+.arena-preparation h1{font-size:13px;line-height:2;font-weight:normal;letter-spacing:1px;margin:0 0 18px}
+.arena-preparation p{font:13px/1.6 Arial,sans-serif;color:#aab7b0;margin:12px 0}
+.arena-load-track{height:3px;background:#34392e;overflow:hidden;margin:24px 0 12px}
+#arena-load-progress{height:100%;width:12%;background:#dabf73;transition:width 180ms ease-out}
+.arena-preparation button,.arena-preparation a{display:inline-block;font:11px/1.6 Arial,sans-serif;padding:9px 12px;background:#15202a;color:#e4cd95;border:1px solid #8c7849;text-decoration:none;cursor:pointer;margin:5px}
+#arena-transition.is-ready{opacity:0;pointer-events:none}
+body.arena-loading .combat-hud,body.arena-loading #spell-bar{visibility:hidden}
+@media(prefers-reduced-motion:reduce){#arena-transition,#arena-load-progress{transition:none}}

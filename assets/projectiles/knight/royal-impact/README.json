@@ -1,0 +1,9 @@
+{
+  "sprite": "Knight - Royal Impact",
+  "frames": 15,
+  "resolution": "512x512",
+  "format": "RGBA PNG",
+  "suggested_playback_fps": 12,
+  "order": "royal_impact_01.png to last",
+  "notes": "top-down impact VFX sequence, all frame canvases share dimensions and center anchors"
+}

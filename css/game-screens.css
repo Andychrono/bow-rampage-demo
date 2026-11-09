@@ -1,0 +1,117 @@
+/* Uma moldura comum ao acampamento, pause e encerramento da jornada. */
+.run-overlay[hidden]{display:none!important}
+.run-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:#03060cce;backdrop-filter:blur(7px);overflow:auto}
+.run-panel{--result-color:#e8c36b;border:2px solid var(--result-color);border-radius:7px;background:#0b101b;box-shadow:0 0 50px #000a,0 0 28px #d3a63d22;color:#e4e7ed;width:100%;max-height:94dvh;overflow:auto}
+.pause-panel{max-width:600px;padding:30px}
+.run-heading{text-align:center;padding-bottom:22px}
+.run-eyebrow{display:block;color:#a99a7a;font-size:7px;letter-spacing:2px;line-height:2;margin-bottom:16px}
+.run-heading h1{font-size:20px;line-height:1.8;letter-spacing:1px;color:var(--result-color);text-shadow:0 2px #000;margin:0 0 10px}
+.run-heading p{font-size:8px;line-height:1.9;color:#a3afc2;margin:0}
+.run-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#354059;border:1px solid #354059;border-radius:4px;overflow:hidden;margin-bottom:18px}
+.run-stats>div{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:17px 15px;background:#101725;min-width:0}
+.run-stats span{font-size:6px;line-height:1.8;color:#96a1b5;letter-spacing:1px}
+.run-stats strong{font-size:15px;line-height:1.6;color:#e9d6a4;font-weight:normal;overflow-wrap:anywhere}
+.run-pact{border-left:2px solid #9774b5;padding:10px 14px;background:#1b152533;margin:0 0 18px}
+.run-pact[hidden],.result-boss[hidden],.result-reward[hidden]{display:none}
+.run-pact h2{font-size:6px;line-height:1.8;letter-spacing:1px;color:#b59acc;margin:0 0 10px}
+.run-pact strong{font-size:9px;color:#dfc6f1;line-height:1.8;font-weight:normal}
+.run-pact p{font:13px/1.6 Arial,sans-serif;color:#b9b0c6;margin:6px 0}
+.run-panel button{font-family:inherit;font-size:8px;line-height:1.8;padding:12px 10px;background:#141d2c;border:1px solid #45536b;border-radius:3px;color:#c6cfdd;cursor:pointer;min-height:42px}
+.run-panel button:hover,.run-panel button:focus-visible{border-color:var(--result-color);outline:1px solid var(--result-color);outline-offset:2px;color:#fff}
+.run-panel .run-primary{background:#d8b655;border-color:#f5dc91;color:#17150d}
+.pause-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pause-actions .run-primary{grid-column:1/-1}
+.pause-dev{margin-top:20px;border-top:1px solid #263147;padding-top:12px;font-size:6px;color:#68768c}
+.pause-dev summary{cursor:pointer;padding:6px 0;line-height:1.8}
+.pause-dev .hud-element{background:none;border:0;padding:12px 0;box-shadow:none;flex-wrap:wrap}
+.pause-dev select{max-width:100%}
+.result-panel{display:grid;grid-template-columns:32% minmax(0,1fr);max-width:920px;padding:0;--result-color:#ba6c70}
+#game-over-screen[data-result=victory] .result-panel{--result-color:#efd078}
+.result-portrait{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#49343c,#080c14);border-right:1px solid #594046;min-height:480px}
+[data-result=victory] .result-portrait{background:radial-gradient(ellipse at 50% 40%,#5b4e25,#080c14);border-color:#6e5a2c}
+.result-portrait>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;filter:saturate(.5) brightness(.75);image-rendering:pixelated}
+[data-result=victory] .result-portrait>img{filter:saturate(.9) brightness(1.05)}
+.result-portrait-shade{position:absolute;inset:0;background:linear-gradient(0deg,#080c16 0%,transparent 55%,#080c1655)}
+.result-portrait #go-voc{position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:2px;color:#e8d7ab;text-shadow:0 2px #000}
+
+.result-content{padding:30px;min-width:0}
+.result-content .run-heading{text-align:left}
+.result-content .run-heading h1{font-size:22px}
+.result-boss{font-size:8px;line-height:2;color:#f0d17f;margin:15px 0}
+.result-reward{font-size:10px;line-height:1.9;color:#eac66b;padding:12px 0;border-top:1px solid #3f3522;margin:10px 0 18px}
+.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.result-actions .run-primary{grid-column:1/-1}
+.result-actions .result-audio{font-size:7px}
+body[data-audio-scene=game] #audio-settings-button{display:none}
+.hud-top{height:56px;padding:0 16px}
+.hud-top>div{gap:8px!important}
+.hud-top .hud-element{padding:7px 10px;font-size:8px;box-shadow:none}
+.hud-top .pause-trigger{padding:7px 12px;font-size:12px}
+.pause-trigger span{font-size:7px;margin-left:6px}
+.hud-top>div:first-child>.hud-element:first-child>span:first-child{display:none}
+@media(max-width:650px){.run-overlay{padding:10px}.pause-panel,.result-content{padding:20px}.run-heading h1{font-size:15px}.run-eyebrow{font-size:6px;letter-spacing:1px}.run-stats strong{font-size:12px}.run-stats>div{padding:13px 10px}.result-panel{grid-template-columns:1fr}.result-portrait{min-height:105px;border-right:0;border-bottom:1px solid #594046}.result-portrait>img{object-position:50% 28%;opacity:.5}.result-portrait #go-voc{text-align:left;left:22px;bottom:24px;font-size:10px}.result-content .run-heading h1{font-size:17px}.run-panel button{font-size:7px}.hud-top{padding:0 8px}.hud-top>div:first-child>.hud-element:first-child{display:none}.hud-top>div:first-child{gap:5px!important}.hud-top #resource-box,.hud-top>div:first-child>.hud-element{min-width:88px!important;padding:6px!important}.hud-top #phase-badge{background:none;border:0;font-size:6px;padding:0 4px}.hud-top .pause-trigger{padding:7px}.pause-trigger span{display:none}}
+@media(prefers-reduced-motion:no-preference){.run-panel{animation:run-panel-in 220ms ease-out both}@keyframes run-panel-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}}
+
+.pause-dev:not(:has(select)){display:none}
+
+/* Combate: barras agrupadas, relógio independente e menu com nome explícito. */
+.hud-top.combat-hud{height:80px;padding:0;background:none;display:block;pointer-events:none}
+.combat-hud .combat-vitals{position:absolute;left:20px;top:18px;display:flex;flex-direction:column;gap:9px!important;width:210px;padding:10px 12px;background:linear-gradient(90deg,#080c16e8,#080c16aa);border-left:2px solid #b79c58;pointer-events:none}
+.vital-meter{width:100%;min-width:0;background:none;border:0;padding:0}
+.meter-label{display:flex;justify-content:space-between;gap:10px;font-size:7px;line-height:1.6;color:#c8c0ab;margin-bottom:5px}
+.meter-track{height:8px;background:#161d26;border:1px solid #665143;border-radius:1px;overflow:hidden}
+#hp-bar{height:100%;background:linear-gradient(90deg,#8c3033,#d76459);transition:width .15s}
+.resource-meter .meter-label{font-size:6px;color:#a4b4bf;margin-bottom:4px}
+.resource-meter .meter-track{height:5px;border-color:#354653}
+#resource-bar{height:100%;background:#d2ad58;transition:width .08s}
+.combat-hud .combat-clock{position:absolute;left:50%;top:24px;transform:translateX(-50%);padding:8px 12px;background:#080c1677;border:0;border-radius:2px;color:#d7ccb0;font-size:10px;line-height:1.6;text-shadow:0 2px 5px #000;pointer-events:none}
+.combat-hud .pause-trigger{position:absolute;right:20px;top:20px;background:#0b111cdd;border:1px solid #ac9150;color:#e6ce8c;padding:10px 13px;font-size:8px;letter-spacing:1px;pointer-events:auto}
+#spell-bar{top:116px;left:20px}
+
+/* Pause: mesma organização de retrato, cabeçalho e moldura das lojas. */
+.pause-panel{max-width:980px;padding:0;border:3px solid #e3bd55;border-radius:7px;background:#090d18;box-shadow:0 0 45px #e2b64322;overflow:auto}
+.pause-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 20px;border-bottom:2px solid #283044;background:#070a12}
+.pause-header h1{font-size:13px;line-height:1.8;color:#f0cc6a;letter-spacing:2px;font-weight:normal;margin:0}
+.pause-header p{font-size:6px;line-height:1.8;color:#8c99ac;letter-spacing:1px;margin-top:5px}
+.pause-header .run-primary{background:#192130;border:1px solid #c6a34b;color:#efd17e;font-size:7px;padding:9px 14px}
+.pause-layout{display:grid;grid-template-columns:32% minmax(0,1fr);min-height:470px}
+.pause-portrait{position:relative;min-height:100%;overflow:hidden;border-right:2px solid #554524;background:#0a0d16}
+.pause-portrait>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%;image-rendering:pixelated}
+.pause-portrait-fade{position:absolute;inset:0;background:linear-gradient(0deg,#080d18 0%,transparent 55%)}
+.pause-portrait>span{position:absolute;bottom:26px;left:0;right:0;text-align:center;font-size:12px;letter-spacing:2px;color:#e8ce8a;text-shadow:0 2px 4px #000}
+.pause-content{padding:24px;min-width:0;background:#0b101b}
+.pause-section-title{font-size:8px;font-weight:normal;letter-spacing:1px;line-height:1.8;color:#d1b66c;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #303b50}
+.pause-content .run-stats{background:none;border:0;gap:16px 24px;border-radius:0;margin-bottom:20px}
+.pause-content .run-stats>div{padding:0 0 12px;border-bottom:1px solid #273143;background:none;gap:8px}
+.pause-content .run-stats strong{font-size:16px}
+.pause-content .run-pact{border:1px solid #43324f;border-left:2px solid #a47cc1;border-radius:3px;background:#16121f;padding:12px 14px;margin-bottom:20px}
+.pause-content .pause-actions{grid-template-columns:1fr 1fr;gap:10px}
+.pause-content .pause-actions button{border-color:#465269;background:#121b2b;font-size:7px}
+.pause-content .pause-actions button:first-child{border-color:#9e8042;color:#e8cc85}
+.pause-dev{margin-top:18px;padding-top:10px}
+@media(max-width:650px){.combat-hud .combat-vitals{left:10px;top:12px;width:150px;padding:8px 9px;gap:7px!important}.meter-label{font-size:6px}.combat-hud .combat-clock{top:17px;left:calc(50% + 8px);font-size:8px;padding:7px}.combat-hud .pause-trigger{right:10px;top:14px;font-size:7px;padding:9px 10px}#spell-bar{top:104px;left:10px}.pause-header{padding:12px;gap:10px}.pause-header h1{font-size:9px;letter-spacing:1px}.pause-header p{font-size:5px;letter-spacing:0}.pause-header .run-primary{font-size:6px;padding:7px}.pause-layout{grid-template-columns:1fr;min-height:0}.pause-portrait{min-height:105px;border-right:0;border-bottom:1px solid #554524}.pause-portrait>img{object-position:50% 28%;opacity:.7}.pause-portrait>span{text-align:left;left:18px;bottom:18px;font-size:10px}.pause-content{padding:18px}.pause-content .run-stats{gap:14px}.pause-content .pause-actions button{font-size:6px}.pause-content .run-stats strong{font-size:13px}}
+
+.combat-hud #resource-box{padding:0!important;min-width:0!important}
+@media(max-width:650px){.combat-hud #phase-badge{font-size:8px;padding:7px;background:#080c1677}}
+#resource-recovery-status{margin-top:4px;color:#edcf86;font-size:6px;line-height:1.6}
+#resource-recovery-status[hidden],#resource-delay-meter[hidden]{display:none}
+#resource-delay-meter{display:block;width:100%;height:3px;border:0;accent-color:#edcf86}
+.pause-reload{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border:1px solid #465269;background:#121b2b;color:#d8deea;font-size:7px}
+.pause-reload select{min-width:0;padding:4px;border:1px solid #566780;background:#0b1019;color:inherit;font:inherit}
+
+/* Settings stay in one subpage; the main pause retains only journey actions. */
+#pause-main[hidden],#pause-settings[hidden],.pause-header button[hidden]{display:none!important}
+.pause-header>div{flex:1;min-width:0}
+#pause-main .pause-actions{grid-template-columns:1fr 1fr}
+#pause-settings-open{grid-column:1/-1}
+.pause-setting-group{padding:0 0 20px;margin:0 0 20px;border-bottom:1px solid #2a3447}
+.pause-setting-group:last-child{border:0;margin-bottom:0;padding-bottom:0}
+.pause-setting-group h2{font-size:8px;line-height:1.8;font-weight:normal;color:#d1b66c;letter-spacing:1px;margin:0 0 14px}
+.pause-setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.pause-setting-row p{font:14px/1.5 Arial,sans-serif;color:#aeb9c9;margin:0}
+.pause-setting-row button{flex-shrink:0;min-width:140px}
+#pause-settings .pause-reload{padding:12px 0;background:none;border:0;font:14px/1.5 Arial,sans-serif}
+#pause-settings .pause-reload select{min-width:105px;padding:8px;font:13px Arial,sans-serif}
+#pause-spells{margin-top:10px;width:100%}
+#pause-spells[hidden]{display:none}
+@media(max-width:650px){.pause-setting-row{align-items:stretch;flex-direction:column;gap:12px}.pause-setting-row button{width:100%}.pause-setting-group{padding-bottom:16px;margin-bottom:16px}}

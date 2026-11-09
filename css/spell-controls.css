@@ -1,0 +1,19 @@
+#spell-settings{position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;padding:0;border:0;background:transparent;color:#f2e8cf;overflow:hidden;font:10px 'Press Start 2P',monospace}
+#spell-settings::backdrop{background:#050913a6}
+#spell-settings [hidden]{display:none!important}
+#spell-settings-panel{box-sizing:border-box;position:absolute;inset:0;margin:auto;width:min(520px,94vw);height:max-content;max-height:90vh;overflow:auto;padding:24px;background:#111826;border:2px solid #d3ad58;border-radius:7px;box-shadow:0 12px 45px #000a}
+#spell-settings h2{font-size:14px;line-height:1.7;margin:0 0 10px;color:#f2ca73}
+#spell-settings p{font:14px/1.5 system-ui,sans-serif;color:#c5d0e0;margin:8px 0}
+#spell-settings button{padding:10px 12px;border:1px solid #53617a;border-radius:4px;color:#f2e8cf;background:#202a3a;font:inherit;font-size:9px;line-height:1.5;cursor:pointer}
+#spell-settings button:hover,#spell-settings button:focus-visible,#spell-position-preview:focus-visible{outline:2px solid #f2ca73;outline-offset:2px}
+#spell-key-options{display:grid;gap:6px;margin:16px 0}
+#spell-key-options>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #394256;line-height:1.7}
+#spell-key-options button{min-width:64px}
+.spell-settings-actions{display:flex;flex-wrap:wrap;gap:8px}
+#spell-position-panel{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:max-content;max-width:75vw;padding:8px 12px;text-align:center;background:#101725ed;border:1px solid #d3ad58;border-radius:5px}
+#spell-position-panel.position-help-bottom{top:auto;bottom:12px}
+#spell-position-preview{position:absolute;z-index:2;top:68px;left:20px;display:flex;gap:9px;touch-action:none;user-select:none;cursor:grab}
+#spell-position-preview:active{cursor:grabbing}
+#spell-position-preview .spell-button{display:block;pointer-events:none;box-shadow:0 0 0 1px #d3ad58}
+@media(max-width:650px){#spell-position-preview{top:66px;left:10px;gap:7px}#spell-settings-panel{padding:16px}}
+#spell-key-options>div[hidden],#spell-position-preview .spell-button[hidden]{display:none}

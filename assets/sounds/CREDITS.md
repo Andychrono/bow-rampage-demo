@@ -1,0 +1,47 @@
+# Bow Rampage Audio Credits
+
+Fontes CC0 e CC BY; as gravações CC BY exigem estes créditos na publicação do jogo. Os arquivos foram cortados, nivelados e, quando indicado, combinados; ambientes receberam emenda suave. Prévia pública MP3 foi usada nas fontes Freesound.
+
+- **Vehicle / Jan Schupke** — [tiny](https://opengameart.org/content/fantasy-sound-effects-tinysized-sfx) — CC0-1.0. 
+- **rubberduck** — [slime](https://opengameart.org/content/40-cc0-water-splash-slime-sfx) — CC0-1.0. 
+- **bolland** — [forest](https://freesound.org/people/bolland/sounds/196005/) — CC0-1.0. 
+- **Vrymaa** — [night](https://freesound.org/people/Vrymaa/sounds/734642/) — CC0-1.0. 
+- **Ver coleção de origem** — [Flecha cortando o ar](https://cc0-sounds.exi.software/collection/Micro%20Pack%20-%20Organic%20Wooshes) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **braqoon** — [Flecha acertando uma criatura](https://freesound.org/s/161098/) — CC0-1.0. Silêncio inicial removido; trecho até 0.8s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Ver coleção de origem** — [Espada e projétil do Knight](https://cc0-sounds.exi.software/collection/Micro%20Pack%20-%20Organic%20Wooshes) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **nekoninja** — [Escudo bloqueando](https://freesound.org/s/370203/) — CC0-1.0. Silêncio inicial removido; trecho até 0.7s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Kenney** — [Impacto real e aterrissagem do boss](https://cc0-sounds.exi.software/collection/kenney_impactsounds) — CC0-1.0. Silêncio inicial removido; trecho até 1.1s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **rubberduck** — [Fúria e presença de boss](https://cc0-sounds.exi.software/collection/80-CC0-RPG-SFX) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Coleção: Organic Wooshes** — [Flechas e escudos girando](https://cc0-sounds.exi.software/collection/Micro%20Pack%20-%20Organic%20Wooshes) — CC0-1.0. Silêncio inicial removido; trecho até 0.7s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **lentikula** — [Disparo mágico](https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx) — CC0-1.0. Silêncio inicial removido; trecho até 0.7s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Coleção: Organic Wooshes** — [Vórtice e invocação](https://cc0-sounds.exi.software/collection/Micro%20Pack%20-%20Organic%20Wooshes) — CC0-1.0. Silêncio inicial removido; trecho até 1.5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **squidge316** — [Raízes nascendo e prendendo](https://freesound.org/s/677814/) — CC0-1.0. Silêncio inicial removido; trecho até 2.0s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **rubberduck** — [Matilha espectral](https://cc0-sounds.exi.software/collection/80-CC0-creature-SFX) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **lentikula** — [Ciclo da vida e proteção arcana](https://lentikula.itch.io/healing-spell-impacts) — CC0-1.0. Silêncio inicial removido; trecho até 2.5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **lentikula** — [Espírito ancestral: crescimento e explosão](https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx) — CC0-1.0. Composição com trecho invertido crescendo por 1.55s, impacto em 1.55s, filtro de agudos e eco curto; pico -6 dBFS. Sem osciladores, sinos ou melodia adicionados.
+- **Zuzek06** — [Slime saltando](https://freesound.org/s/353250/) — CC0-1.0. Silêncio inicial removido; trecho até 0.5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **DrMinky** — [Slime recebendo dano](https://freesound.org/s/167074/) — CC BY 4.0. Silêncio inicial removido; trecho até 0.5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **rubberduck** — [Slime morrendo](https://cc0-sounds.exi.software/collection/80-CC0-creature-sfx-2) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **juskiddink** — [Corvo passando em voo](https://freesound.org/s/125940/) — CC BY 4.0. Silêncio inicial removido; trecho até 1.0s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **rubberduck** — [Jogador recebendo dano](https://cc0-sounds.exi.software/collection/80-CC0-creature-SFX) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Ver coleção de origem** — [Esquiva e arrancada](https://cc0-sounds.exi.software/collection/Micro%20Pack%20-%20Organic%20Wooshes) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Kenney** — [Passos na floresta](https://cc0-sounds.exi.software/collection/kenney_impactsounds) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Coleção: NOX** — [Passos no Pico dos Corvos](https://cc0-sounds.exi.software/collection/essentials_series_nox_sound/) — CC0-1.0. Silêncio inicial removido; trecho até 0.5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Ver coleção de origem** — [Clique e navegação de menus](https://cc0-sounds.exi.software/collection/bb%20-%20books,%20paper,%20writing%20(jan%202021)/) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Kenney** — [Abrir e fechar o grimório](https://cc0-sounds.exi.software/collection/kenney_rpgaudio) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **rubberduck** — [Virar página](https://cc0-sounds.exi.software/collection/80-CC0-RPG-SFX) — CC0-1.0. Silêncio inicial removido; trecho até 0.8s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Coleção: Books, Paper** — [Assinar o pergaminho](https://cc0-sounds.exi.software/collection/bb%20-%20books,%20paper,%20writing%20(jan%202021)/) — CC0-1.0. Silêncio inicial removido; trecho até 2.0s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Kenney** — [Mochila e sacolinha do Gustav](https://cc0-sounds.exi.software/collection/kenney_rpgaudio) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **rubberduck** — [Ouro e venda](https://cc0-sounds.exi.software/collection/80-CC0-RPG-SFX) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Kenney** — [Orb coletada](https://cc0-sounds.exi.software/collection/kenney_impactsounds) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **rubberduck** — [Caldeirão borbulhando](https://cc0-sounds.exi.software/collection/30-cc0-sfx-loops) — CC0-1.0. Silêncio inicial removido; trecho até 5s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Kenney** — [Desbloqueio, compra e vitória](https://cc0-sounds.exi.software/collection/kenney_impactsounds) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **rubberduck** — [Derrota e falha de pacto](https://cc0-sounds.exi.software/collection/80-CC0-creature-SFX) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **Hanbaal** — [Corda do arco: gravação real](https://freesound.org/people/Hanbaal/sounds/178872/) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **qubodup** — [Voz de corvo](https://freesound.org/s/813115/) — CC0-1.0. Silêncio inicial removido; trecho até 2s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **Joseph SARDIN — BigSoundBank** — [Ambiente da floresta](https://bigsoundbank.com/forest-4-s2749.html) — CC0-1.0. Silêncio inicial removido; trecho até 30s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **lentikula** — [Raio atingindo o chão](https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx) — CC0-1.0. Silêncio inicial removido; trecho até 0.95s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **egomassive** — [Sapinho bônus](https://freesound.org/people/egomassive/sounds/536759/) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **dwightsabeast** — [Ambiente da montanha](https://freesound.org/people/dwightsabeast/sounds/321412/) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.
+- **lentikula** — [Elo elétrico](https://lentikula.itch.io/freecc0-basic-spell-impacts-sfx) — CC0-1.0. Silêncio inicial removido; trecho até 0.45s; fades; pico até -6 dBFS. Sem mudança de afinação.
+- **rubberduck** — [Escudo se rompendo](https://cc0-sounds.exi.software/collection/75-cc0-breaking-falling-hit-sfx) — CC0-1.0. Cópia idêntica do áudio aprovado; sem cortes ou mudança de volume.

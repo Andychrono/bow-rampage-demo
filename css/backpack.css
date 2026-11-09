@@ -1,0 +1,72 @@
+/* As duas poses da mochila são artes originais; itens ficam sobre os bolsos desenhados. */
+#shop-modal .backpack-grid-wrap{position:relative;flex:1;min-height:260px;overflow:auto;display:flex;align-items:center;justify-content:center;padding:12px 16px;background:radial-gradient(ellipse,#49342344,transparent 70%),#0a0e18;scrollbar-width:thin;scrollbar-color:#80613b #0a0e18}
+.backpack-closed{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;width:100%;height:100%;padding:0;border:0;background:none;color:#e7ce91;font-family:inherit;cursor:pointer;font-size:8px;line-height:1.8}
+.backpack-closed img{display:block;max-height:320px;width:min(100%,340px);object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 12px 10px #0008)}
+.backpack-closed:hover img,.backpack-closed:focus-visible img{filter:brightness(1.12) drop-shadow(0 0 14px #d9ae4955)}
+.backpack-closed:focus-visible{outline:2px solid #e7ce91;outline-offset:-3px}
+.backpack-interior{width:100%;max-width:550px;position:relative;margin:auto;padding:0;border:0;background:none;box-shadow:none}
+.backpack-interior-label{display:block;text-align:center;color:#c0ac84;font-size:7px;letter-spacing:1px;line-height:1.8;margin-bottom:8px;text-shadow:0 2px #161a12}
+.backpack-art-stage{position:relative;width:100%;aspect-ratio:1.4;overflow:hidden;isolation:isolate;border-radius:12px;background:#11130f;box-shadow:0 8px 22px #0008}
+.backpack-open-art{position:absolute;width:190%;max-width:none;height:auto;left:-43%;top:-64%;pointer-events:none;image-rendering:auto;filter:brightness(.8) saturate(.85)}
+.backpack-art-stage:after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;box-shadow:inset 0 0 22px 12px #05080b99}
+#shop-modal .backpack-grid{position:absolute;left:9%;top:7.5%;width:82.2%;height:88%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:2% 1.7%;z-index:1}
+#shop-modal .backpack-slot{min-width:0;min-height:0;width:100%;height:100%;max-height:none;aspect-ratio:auto;padding:10%;background:none;border:2px solid transparent;border-radius:10px;box-shadow:none;outline-offset:-3px;transform:none}
+#shop-modal button.backpack-slot{font-family:inherit;color:#fff}
+#shop-modal .backpack-slot.empty{opacity:1;border-color:transparent;cursor:default}
+#shop-modal .backpack-slot.empty span{display:none}
+#shop-modal .backpack-slot.selected,#shop-modal .backpack-slot:not(.empty):hover,#shop-modal .backpack-slot:focus-visible{border-color:#e6c26e;outline:1px solid #e5c77c;box-shadow:inset 0 0 18px #f0bf4a33,0 0 9px #f5c84244;background:#d5ad4810;transform:none}
+#shop-modal .slot-icon{width:70%;height:70%;max-width:70%;max-height:70%;object-fit:contain;filter:drop-shadow(0 3px 4px #000)}
+#shop-modal .slot-count{z-index:1;bottom:8%;right:8%;border-color:#87714a;background:#211b13;font-size:7px;line-height:1.5}
+.backpack-close{display:block;margin:9px auto 0;border:0;border-bottom:1px solid #9b8556;background:none;color:#d4c398;font-family:inherit;font-size:7px;line-height:1.8;padding:5px;cursor:pointer}
+.backpack-close:focus-visible{outline:2px solid #f5c842}
+.backpack-interior[hidden],.backpack-closed[hidden]{display:none!important}
+.backpack-closed.bag-opening{animation:bag-away 200ms ease-out both;pointer-events:none}
+.backpack-interior.bag-revealing{animation:bag-inside 240ms ease-out both}
+@keyframes bag-away{to{opacity:0;transform:scale(.96)}}
+@keyframes bag-inside{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+#shop-modal .shop-box,#shop-modal .shop-right-col,#shop-modal .shop-left-col{min-width:0;min-height:0}
+#shop-modal .trade-counter{flex:0 0 auto;padding:10px 16px 14px;border-top:1px solid #263147}
+#shop-modal .trade-counter-inner{padding:10px 12px}
+#shop-modal .trade-placeholder{padding:12px 8px;color:#8593a8;line-height:1.9}
+
+@media(max-width:760px){#shop-modal .backpack-title{font-size:7px;letter-spacing:0}#shop-modal .backpack-header{padding:9px;gap:5px;flex-wrap:wrap}#shop-modal .backpack-grid-wrap{padding:12px 8px;min-height:240px}.backpack-interior-label{font-size:6px}.backpack-closed img{max-height:260px}#shop-modal .trade-counter{padding:8px}#shop-modal .inspect-actions{flex-wrap:wrap}#shop-modal .btn-offer-deal{font-size:6px}#shop-modal .backpack-capacity-pill{font-size:6px}}
+@media(max-width:480px){#shop-modal .shop-main-layout{grid-template-columns:minmax(0,1fr);grid-template-rows:105px minmax(0,1fr)}#shop-modal .shop-left-col{flex-direction:row;border-right:0;border-bottom:1px solid var(--gold-dark)}#shop-modal .seller-hero-frame{flex:0 0 100px;height:105px;border:0}#shop-modal .seller-avatar-img{object-position:50% 35%}#shop-modal .seller-tag-overlay{display:none}#shop-modal .seller-speech-bubble{flex:1;min-height:0;padding:10px;font-size:7px;line-height:1.8;display:flex;align-items:center}#shop-modal .speech-text{padding:0}#shop-modal .seller-speech-bubble:before{display:none}#shop-modal .shop-box{height:95dvh;max-height:none}#shop-modal .shop-right-col{overflow:auto}#shop-modal .backpack-grid-wrap{flex:1 0 270px}.backpack-closed img{max-height:225px}#shop-modal .inspect-name{font-size:8px}#shop-modal .inspect-desc{font-size:6px}}
+@media(max-width:480px){#shop-modal .shop-main-layout{grid-template-columns:minmax(0,1fr)}#shop-modal .shop-title-wrap{min-width:0}#shop-modal .shop-subtext{display:none}#shop-modal .shop-title{font-size:8px;letter-spacing:1px}#shop-modal .shop-header{flex-wrap:nowrap}#shop-modal .shop-header-actions{flex-direction:column;align-items:flex-end;gap:5px}#shop-modal .seller-speech-bubble{min-width:0}#shop-modal .backpack-title{font-size:6px}#shop-modal .inspect-header{min-width:0}#shop-modal .inspect-info{min-width:0}#shop-modal .inspect-rarity{font-size:6px;line-height:1.8}#shop-modal .inspect-offer-row{gap:6px;flex-wrap:wrap}#shop-modal .inspect-offer-val{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.backpack-closed.bag-opening,.backpack-interior.bag-revealing{animation:none}}
+
+/* Todos os bolsos continuam visíveis quando o balcão de venda está preenchido. */
+@media(min-width:761px){.backpack-interior{max-width:400px}}
+
+/* Arte inteira em nove regiões: centro ampliado, laterais preservadas e suavizadas. */
+#shop-modal .backpack-grid-wrap{padding:0;overflow:hidden;align-items:stretch}
+.backpack-interior{width:100%;max-width:none;height:100%;min-height:300px;margin:0;display:flex;flex-direction:column}
+.backpack-interior-label{position:absolute;top:12px;left:0;right:0;z-index:3;margin:0;pointer-events:none}
+.backpack-art-stage{width:100%;height:100%;min-height:300px;flex:1;aspect-ratio:auto;border-radius:0;background:none;box-shadow:none;overflow:visible}
+.backpack-open-art{position:absolute;inset:0;width:auto;height:auto;max-width:none;border:0 solid transparent;border-image:url('../assets/props/backpack-open.webp') 330 360 490 335 fill / 18% 13% 18% 13% / 0 stretch;filter:brightness(.85) saturate(.9);mask-image:radial-gradient(ellipse 65% 70% at 50% 48%,#000 40%,#000b 65%,#0005 85%,transparent 100%);pointer-events:none}
+.backpack-art-stage:after{display:none}
+#shop-modal .backpack-grid{left:14.9%;top:19.95%;width:70.1%;height:59%;gap:2% 1.7%}
+.backpack-close{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);margin:0;z-index:3;background:#0a0e18b3;padding:7px 10px;white-space:nowrap}
+@media(max-width:480px){#shop-modal .backpack-grid-wrap{flex:1 0 310px}.backpack-interior,.backpack-art-stage{min-height:310px}.backpack-interior-label{top:10px;font-size:6px}}
+
+/* Os itens ocupam o bolso, com a quantidade legível no canto. */
+#shop-modal .backpack-slot{padding:6%}
+#shop-modal .slot-icon{width:90%;height:90%;max-width:90%;max-height:90%}
+
+/* Balcão com altura reservada: selecionar e vender não redimensiona a mochila. */
+#shop-modal .trade-counter{flex:0 0 134px;height:134px;min-height:134px;padding:10px 16px;justify-content:center}
+#shop-modal .trade-counter-inner{height:100%;min-height:0;justify-content:center;padding:10px 12px;gap:0}
+#shop-modal .trade-counter-label,#shop-modal .inspect-large-icon,#shop-modal .inspect-desc,#shop-modal .inspect-offer-text{display:none}
+#shop-modal #item-inspect-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+#shop-modal .inspect-header{min-width:0;gap:0}
+#shop-modal .inspect-info{min-width:0;gap:6px}
+#shop-modal .inspect-name{font-size:9px;line-height:1.5}
+#shop-modal .inspect-rarity{font-size:6px;line-height:1.6}
+#shop-modal .inspect-offer-row{background:none;border:0;padding:0;gap:0}
+#shop-modal .inspect-offer-val{font-size:8px;line-height:1.8;white-space:nowrap}
+#shop-modal .inspect-actions{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#shop-modal .inspect-actions .btn-offer-deal{padding:10px 6px;font-size:7px;line-height:1.6;box-shadow:none}
+#shop-modal .trade-placeholder{grid-column:1 / -1;margin:0;padding:10px;line-height:2}
+@media(max-width:480px){#shop-modal .trade-counter{flex-basis:154px;height:154px;min-height:154px;padding:8px}#shop-modal #item-inspect-panel{gap:10px 7px}#shop-modal .inspect-offer-val{font-size:7px}#shop-modal .inspect-name{font-size:8px}#shop-modal .inspect-actions .btn-offer-deal{font-size:6px;min-height:42px}}
+
+/* Coordenadas dos bolsos na arte original de 1254 × 1254, após o enquadramento. */
+#shop-modal .backpack-grid{left:13.93%;top:19.03%;width:72.28%;height:61.2%;gap:2.65% 1.47%}

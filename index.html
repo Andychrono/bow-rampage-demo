@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title data-i18n="screen.start.title">Bow Rampage — Seleção de Combatente</title><link rel="icon" href="data:,">
+  <script>if(new URLSearchParams(location.search).get("camp")==="1"||new URLSearchParams(location.search).get("choosePact")==="1")document.documentElement.classList.add("skip-start");</script>
+  <link rel="preload" as="image" href="assets/maps/start-screen-v2.webp">
+  <link rel="stylesheet" href="css/start-screen.css">
+<link rel="stylesheet" href="css/achievements.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"/>
+  <style>
+    :root {
+      --gold: #f5c842;
+      --gold-dark: #b8860b;
+      --gold-glow: rgba(245, 200, 66, 0.5);
+      --red-arcade: #ef4444;
+      --blue-arcade: #38bdf8;
+      --bg-dark: #07090f;
+      --border-outer: #3e4c6d;
+      --border-inner: #1e2638;
+      --card-bg: #0d121f;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: #f1f5f9;
+      font-family: 'Press Start 2P', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    /* ─── BACKGROUND WALLPAPER (FLORESTA ENCANTADA VIVA) ─── */
+    .bg-backdrop {
+      position: fixed;
+      inset: 0;
+      background: url('assets/maps/character-selection-background.webp') center center / cover no-repeat;
+      filter: blur(5px) brightness(0.82) saturate(1.05);
+      z-index: 0;
+      transform: scale(1.04);
+    }
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 45%, rgba(13,18,31,0.30) 0%, rgba(7,9,15,0.78) 85%);
+      z-index: 0;
+      pointer-events: none;
+    }
+    #bg-particles {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ─── SCANLINES RETRÔ ─── */
+    .scanlines {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    /* ─── MAIN CONTAINER ─── */
+    .arcade-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1200px;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ─── CABEÇALHO / LOGO ─── */
+    .arcade-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .sub-tag {
+      font-size: 10px;
+      color: var(--blue-arcade);
+      text-shadow: 0 0 10px var(--blue-arcade);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+    .title-main {
+      font-size: clamp(20px, 4vw, 36px);
+      color: var(--gold);
+      text-shadow: 0 0 14px var(--gold-glow), 3px 3px 0 #000, -2px -2px 0 #78350f;
+      line-height: 1.4;
+      letter-spacing: 2px;
+    }
+    .banner-subtext {
+      font-size: 8px;
+      color: #93c5fd;
+      letter-spacing: 1.5px;
+      margin-top: 8px;
+      text-shadow: 0 0 10px rgba(147, 197, 253, 0.6);
+      line-height: 1.6;
+    }
+    .banner-select {
+      display: inline-block;
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 2px solid var(--border-outer);
+      border-radius: 4px;
+      padding: 8px 24px;
+      font-size: 11px;
+      color: #cbd5e1;
+      box-shadow: 0 0 15px rgba(0,0,0,0.8);
+      letter-spacing: 2px;
+    }
+
+    /* ─── GRADE DOS 4 RETÂNGULOS DE PÉ (ESTILO METAL SLUG) ─── */
+    .characters-roster {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      width: 100%;
+      margin: 10px 0 28px;
+    }
+
+    @media (max-width: 900px) {
+      .characters-roster {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 480px) {
+      .characters-roster {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card Retangular Vertical */
+    .hero-card {
+      position: relative;
+      height: 440px;
+      background: var(--card-bg);
+      border: 3px solid var(--border-outer);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.6);
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .hero-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: var(--gold);
+      box-shadow: 0 15px 35px rgba(0,0,0,0.9), 0 0 25px var(--gold-glow);
+    }
+
+    /* Banner "1P", "2P", "READY" no topo do card estilo Metal Slug */
+    .card-top-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #475569;
+      color: #94a3b8;
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 2px;
+      z-index: 4;
+      letter-spacing: 1px;
+    }
+    .hero-card:hover .card-top-tag {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Área da Imagem de Corpo Inteiro */
+    .card-portrait-wrap {
+      position: absolute;
+      inset: 0;
+      bottom: 70px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      background: radial-gradient(circle at bottom, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+    }
+
+    .hero-portrait {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      transition: transform 0.35s ease, filter 0.2s;
+      filter: brightness(0.92);
+    }
+
+    .hero-card:hover .hero-portrait {
+      transform: scale(1.06);
+      filter: brightness(1.08) drop-shadow(0 0 12px rgba(245, 200, 66, 0.4));
+    }
+
+    /* Placa inferior com Nome da Vocação */
+    .card-foot-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(180deg, rgba(13, 18, 31, 0.85) 0%, #080c16 100%);
+      border-top: 2px solid var(--border-inner);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 6px;
+      z-index: 5;
+    }
+    .hero-title {
+      font-size: 13px;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+      transition: color 0.15s;
+    }
+    .hero-role-badge {
+      font-size: 8px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      background: rgba(0,0,0,0.6);
+      letter-spacing: 1px;
+    }
+    .hero-card:hover .hero-title {
+      color: var(--gold);
+      text-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    /* Cores personalizadas por vocação & Auras Elementais */
+    .card-knight {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85), 0 0 25px rgba(59, 130, 246, 0.22);
+    }
+    .card-knight:hover {
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 35px rgba(234, 179, 8, 0.55);
+    }
+    .card-knight .hero-role-badge { color: #93c5fd; border: 1px solid #3b82f6; }
+
+    .card-sorcerer {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85), 0 0 25px rgba(168, 85, 247, 0.22);
+    }
+    .card-sorcerer:hover {
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 35px rgba(168, 85, 247, 0.55);
+    }
+    .card-sorcerer .hero-role-badge { color: #d8b4fe; border: 1px solid #a855f7; }
+
+    .card-druid {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85), 0 0 25px rgba(34, 197, 94, 0.22);
+    }
+    .card-druid:hover {
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 35px rgba(34, 197, 94, 0.55);
+    }
+    .card-druid .hero-role-badge { color: #86efac; border: 1px solid #22c55e; }
+
+    .card-archer {
+      box-shadow: 0 10px 25px rgba(0,0,0,0.85), 0 0 25px rgba(245, 158, 11, 0.22);
+    }
+    .card-archer:hover {
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 35px rgba(245, 158, 11, 0.55);
+    }
+    .card-archer .hero-role-badge { color: #fde047; border: 1px solid #eab308; }
+
+    /* Indicador de Seleção / Clique piscante */
+    .click-prompt {
+      font-size: 8px;
+      color: #64748b;
+      margin-top: 4px;
+      animation: blinkText 1.4s infinite;
+    }
+    @keyframes blinkText {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; color: var(--gold); }
+    }
+
+    /* ─── BOTÕES DE NAVEGAÇÃO INFERIOR ─── */
+    .bottom-bar {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-arcade {
+      background: #1a233a;
+      border: 2px solid var(--gold-dark);
+      color: var(--gold);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 14px 28px;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 4px 4px 0 #000, 0 0 15px rgba(245, 200, 66, 0.2);
+      transition: all 0.15s;
+      letter-spacing: 1px;
+    }
+    .btn-arcade:hover {
+      background: var(--gold);
+      color: #000;
+      border-color: #fff;
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 #000, 0 0 25px var(--gold-glow);
+    }
+    .btn-arcade:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       TELA MODAL DE REVELAÇÃO DO PERSONAGEM (ESTILO ARCADE DESC)
+       ══════════════════════════════════════════════════════════════ */
+    #reveal-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 12, 0.56);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      backdrop-filter: blur(3px);
+    }
+    #reveal-screen.show {
+      display: flex;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .reveal-box {
+      width: 100%;
+      max-width: 960px;
+      max-height: 90vh;
+      background: #0d121f;
+      border: 3px solid var(--gold);
+      border-radius: 10px;
+      box-shadow: 0 0 50px rgba(0,0,0,0.9), 0 0 30px var(--gold-glow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .reveal-header {
+      background: linear-gradient(90deg, #162035 0%, #0d121f 100%);
+      border-bottom: 2px solid var(--gold-dark);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .reveal-headline {
+      font-size: 15px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-back-roster {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+      color: #fff;
+      font-family: inherit;
+      font-size: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s;
+    }
+    .btn-back-roster:hover {
+      background: #ef4444;
+    }
+
+    /* Conteúdo Principal do Reveal (Lado a Lado) */
+    .reveal-body {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    @media (max-width: 768px) {
+      .reveal-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Coluna Esquerda: A 2ª Imagem com Arco e Disparo Revelado */
+    .reveal-image-container {
+      position: relative;
+      background: #060911;
+      border: 2px solid var(--border-outer);
+      border-radius: 8px;
+      height: 380px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    }
+    .reveal-bow-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      animation: pulseReveal 3s ease-in-out infinite alternate;
+    }
+    @keyframes pulseReveal {
+      0% { filter: drop-shadow(0 0 6px rgba(245,200,66,0.3)); }
+      100% { filter: drop-shadow(0 0 18px rgba(245,200,66,0.7)); }
+    }
+    .secret-stamp {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: var(--red-arcade);
+      color: #fff;
+      font-size: 8px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+      transform: rotate(6deg);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    }
+
+    /* Coluna Direita: Informações, Piada do Arco e Atributos */
+    .reveal-info-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .reveal-name {
+      font-size: 22px;
+      color: #fff;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .reveal-shock-box {
+      background: rgba(245, 200, 66, 0.08);
+      border-left: 4px solid var(--gold);
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+    }
+    .shock-title {
+      font-size: 10px;
+      color: var(--gold);
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .shock-desc {
+      font-size: 8px;
+      color: #cbd5e1;
+      line-height: 1.8;
+    }
+
+    /* Estatísticas de Combate */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      background: #080d18;
+      border: 1px solid var(--border-inner);
+      border-radius: 6px;
+      padding: 14px;
+    }
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-size: 7px;
+      color: #64748b;
+      letter-spacing: 1px;
+    }
+    .stat-bar-bg {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, var(--gold));
+    }
+
+    /* Botão Grandioso de Iniciar com o Personagem */
+    .reveal-foot {
+      padding: 16px 24px;
+      background: #0a0e1a;
+      border-top: 2px solid var(--border-inner);
+      display: flex;
+      justify-content: flex-end;
+      gap: 14px;
+    }
+    .btn-lock-in {
+      background: var(--gold);
+      color: #000;
+      border: 2px solid #fff;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 14px 34px;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 0 20px var(--gold-glow), 4px 4px 0 #000;
+      transition: all 0.15s;
+      letter-spacing: 2px;
+    }
+    .btn-lock-in:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 35px rgba(245,200,66,0.8), 6px 6px 0 #000;
+    }
+    .btn-lock-in:active {
+      transform: translateY(2px);
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    /* ─── BARRA SUPERIOR DO MENU (GOLD & LOJA) ─── */
+    .menu-top-bar {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9999;
+    }
+    .gold-badge {
+      background: rgba(13, 18, 31, 0.94);
+      border: 2px solid var(--gold);
+      border-radius: 4px;
+      padding: 7px 14px;
+      font-size: 9px;
+      color: var(--gold);
+      box-shadow: 0 0 14px rgba(245, 200, 66, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 1px;
+    }
+    .btn-shop-open {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid var(--gold);
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 9px;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 16px rgba(245, 200, 66, 0.4), 3px 3px 0 #000;
+      transition: all 0.15s ease;
+      letter-spacing: 1px;
+    }
+    .btn-shop-open:hover {
+      background: var(--gold);
+      color: #000;
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(245, 200, 66, 0.75), 4px 4px 0 #000;
+    }
+
+    /* ─── MODAL DA TENDA DO MERCADOR (TELA GRANDIOSA) ─── */
+    #shop-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(3, 5, 10, 0.92);
+      backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .shop-box {
+      background: #090d18;
+      border: 3px solid var(--gold);
+      border-radius: 8px;
+      max-width: 980px;
+      width: 100%;
+      height: 92vh;
+      max-height: 680px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 60px rgba(245, 200, 66, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.9);
+      overflow: hidden;
+    }
+
+    /* ── Topo ── */
+    .shop-header {
+      background: #060810;
+      border-bottom: 2px solid #1e293b;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .shop-title-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .shop-title {
+      font-size: 12px;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px var(--gold-glow);
+    }
+    .shop-subtext { font-size: 7px; color: #64748b; letter-spacing: 1px; }
+    .shop-header-actions { display: flex; align-items: center; gap: 14px; }
+    .shop-gold-pill {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--gold);
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 9px;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-close-shop {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      font-family: inherit;
+      font-size: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+    .btn-close-shop:hover { border-color: #ef4444; color: #ef4444; }
+
+    /* ── Grid Principal 2 Colunas ── */
+    .shop-main-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ════════════════════════════════════════════
+       COLUNA ESQUERDA — GUSTAV MONUMENTAL
+       Layout: [retrato grande] [balão de fala]
+       sem scroll, totalmente fixo
+    ════════════════════════════════════════════ */
+    .shop-left-col {
+      background: #060912;
+      border-right: 2px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Retrato do Gustav — ocupa o máximo possível */
+    .seller-hero-frame {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border-bottom: 2px solid #1e293b;
+      overflow: hidden;
+      position: relative;
+      background: radial-gradient(circle at 50% 80%, #0d1a2e 0%, #030408 70%);
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+    }
+    .seller-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      transition: transform 0.35s ease, filter 0.35s ease;
+    }
+    /* Aura dourada ao redor do Gustav quando feliz */
+    .seller-hero-frame.seller-happy {
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 0 0 40px rgba(245,200,66,0.7);
+    }
+    .seller-tag-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 14px;
+      background: linear-gradient(180deg, transparent 0%, rgba(4,6,12,0.97) 100%);
+      text-align: center;
+    }
+    .seller-name-label {
+      font-size: 10px;
+      color: var(--gold);
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 10px rgba(245,200,66,0.6);
+    }
+    .seller-sub-label { font-size: 7px; color: #94a3b8; margin-top: 3px; }
+
+    /* Balão de fala estilo pergaminho — base fixa da coluna esquerda */
+    .seller-speech-bubble {
+      flex-shrink: 0;
+      width: 100%;
+      background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+      border-top: 3px solid var(--gold-dark);
+      padding: 14px 18px 16px;
+      font-size: 8px;
+      color: #e2e8f0;
+      line-height: 1.75;
+      min-height: 90px;
+      position: relative;
+    }
+    .seller-speech-bubble::before {
+      content: '💬';
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      font-size: 11px;
+      opacity: 0.5;
+    }
+    .seller-speech-bubble .speech-text {
+      padding-left: 22px;
+      display: block;
+    }
+
+    /* ════════════════════════════════════════════
+       COLUNA DIREITA — MOCHILA + BALCÃO
+       Layout fixo em 3 zonas:
+         [cabeçalho] → flex-shrink:0
+         [grade de slots] → flex-shrink:0 (sem scroll)
+         [balcão de negociação] → flex-shrink:0, fixo no fundo
+    ════════════════════════════════════════════ */
+    .shop-right-col {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #090d18;
+    }
+
+    /* Zona 1 — Cabeçalho da mochila */
+    .backpack-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #07090f;
+      border-bottom: 2px solid #1a2234;
+      padding: 10px 18px;
+    }
+    .backpack-title {
+      font-size: 10px;
+      color: #f8fafc;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .backpack-capacity-pill {
+      font-size: 7.5px;
+      color: #94a3b8;
+      background: #1e293b;
+      border: 1px solid #334155;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Zona 2 — Grade da Mochila (sempre visível, sem rolar) */
+    .backpack-grid-wrap {
+      flex-shrink: 0;
+      padding: 14px 18px 10px;
+      background: #090d18;
+      border-bottom: 2px solid #1a2234;
+    }
+    .backpack-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .backpack-slot {
+      aspect-ratio: 1;
+      background: #070a14;
+      border: 2px solid #1e293b;
+      border-radius: 6px;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+    }
+    .backpack-slot:not(.empty):hover {
+      border-color: #475569;
+      transform: translateY(-2px);
+    }
+    .backpack-slot.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 16px var(--gold-glow), inset 0 0 12px rgba(245, 200, 66, 0.15);
+      transform: translateY(-2px);
+    }
+    .backpack-slot.empty {
+      cursor: default;
+      border-style: dashed;
+      border-color: #151f32;
+      opacity: 0.55;
+    }
+    .slot-icon {
+      max-width: 75%;
+      max-height: 75%;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
+    }
+    .slot-count {
+      position: absolute;
+      bottom: 4px;
+      right: 5px;
+      font-size: 7px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1px 4px;
+      border-radius: 3px;
+      border: 1px solid #334155;
+    }
+
+    /* Zona 3 — Balcão de Negociação (fixo no fundo, sem scroll) */
+    .trade-counter {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 12px 18px 16px;
+      background: #07090f;
+      border-top: 0;
+      min-height: 0;
+    }
+    .trade-counter-inner {
+      background: #0b1020;
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .trade-counter-label {
+      font-size: 7px;
+      color: #475569;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 8px;
+    }
+    /* Painel de inspeção dentro do balcão */
+    .inspect-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .inspect-large-icon {
+      width: 52px;
+      height: 52px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px;
+      flex-shrink: 0;
+    }
+    .inspect-large-icon img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+    }
+    .inspect-info { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .inspect-name { font-size: 9px; color: #f8fafc; }
+    .inspect-rarity { font-size: 7px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .inspect-desc { font-size: 7px; color: #94a3b8; line-height: 1.5; }
+    .inspect-offer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0d1322;
+      border: 1px solid #263451;
+      border-radius: 4px;
+      padding: 9px 12px;
+    }
+    .inspect-offer-text { font-size: 7.5px; color: #cbd5e1; }
+    .inspect-offer-val { font-size: 10px; color: var(--gold); }
+    .inspect-actions { display: flex; gap: 10px; }
+    .btn-offer-deal {
+      flex: 1;
+      background: var(--gold);
+      color: #000;
+      border: 2px solid #fff;
+      font-family: inherit;
+      font-size: 8px;
+      font-weight: bold;
+      padding: 11px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 0 14px var(--gold-glow);
+      transition: all 0.12s;
+      letter-spacing: 0.5px;
+    }
+    .btn-offer-deal:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(245, 200, 66, 0.85);
+    }
+    .btn-offer-deal:active { transform: translateY(1px); }
+    .btn-offer-deal:disabled {
+      background: #1e293b;
+      border-color: #334155;
+      color: #475569;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-sell-all {
+      background: #0d1322;
+      border: 2px solid var(--gold);
+      color: var(--gold);
+    }
+    .btn-sell-all:hover {
+      background: #1a2a40;
+    }
+    /* Placeholder quando nenhum item está selecionado */
+    .trade-placeholder {
+      text-align: center;
+      padding: 20px 10px;
+      color: #334155;
+      font-size: 7.5px;
+      line-height: 1.8;
+    }
+  </style>
+  <link rel="stylesheet" href="css/witch-shop.css">
+  <link rel="stylesheet" href="css/grimoire-motion.css">
+  <link rel="stylesheet" href="css/cauldron.css">
+  <link rel="stylesheet" href="css/grimoire-pages.css">
+  <link rel="stylesheet" href="css/camp-navigation.css">
+
+<link rel="stylesheet" href="css/stage-selection.css">
+<link rel="stylesheet" href="css/backpack.css">
+<link rel="stylesheet" href="css/arena-transition.css">
+
+<style>.demo-label{position:fixed;left:12px;bottom:10px;z-index:9998;color:#c6b17e;font:9px monospace;letter-spacing:1px;pointer-events:none}#stage-options{grid-template-columns:minmax(0,390px);justify-content:center}#station-secrets{display:none!important}</style></head>
+<body class="start-active" data-audio-scene="menu">
+<section id="arena-transition" aria-label="Preparação da partida" role="status" hidden><div class="arena-preparation"><small>BOW RAMPAGE</small><h1>ENTRANDO NA CLAREIRA</h1><div class="arena-load-track"><div id="arena-load-progress"></div></div><p id="arena-load-status">Preparando a jornada.</p><div id="arena-load-actions" hidden><button type="button" onclick="location.reload()">Tentar novamente</button><a href="index.html">Voltar ao menu</a></div></div></section>
+
+<div class="bg-backdrop camp-scenery" aria-hidden="true"><div class="camp-scene camp-scene-merchant"></div><div class="camp-scene camp-scene-center"></div><div class="camp-scene camp-scene-witch"></div></div>
+<div class="bg-overlay"></div>
+<canvas id="bg-particles"></canvas>
+<div class="scanlines"></div>
+
+<section id="start-screen" class="start-screen" aria-labelledby="start-title">
+  <div class="start-scene" aria-hidden="true"></div>
+  <div class="start-content"><h1 id="start-title" class="start-logo" aria-label="Bow Rampage"><span class="start-logo-bow" aria-hidden="true">BOW</span><span class="start-logo-rampage" aria-hidden="true">RAMPAGE</span></h1><div class="start-ornament" aria-hidden="true"><i></i></div></div>
+  <nav class="start-actions" aria-label="Menu inicial"><button id="start-play" class="start-play" type="button">JOGAR</button><div class="start-secondary"><button id="start-audio" type="button">SOM</button><button type="button" data-open-achievements>CONQUISTAS</button><button id="start-credit-open" type="button">CRÉDITOS</button></div><p class="start-hint">ENTER PARA JOGAR</p></nav>
+  <div class="start-signature"><small>UMA CRIAÇÃO DE</small>ANDY CHRONO</div>
+</section>
+<dialog id="start-credits" aria-labelledby="start-credit-title"><h2 id="start-credit-title">CRÉDITOS</h2><div id="start-credit-content"></div><button id="start-credit-close" class="start-dialog-close" type="button">VOLTAR</button></dialog>
+
+
+
+<div class="arcade-wrapper">
+
+  <!-- CABEÇALHO / LOGO -->
+  <div class="arcade-header">
+    <div class="sub-tag">✦ ESPADAS • VARINHAS • ESPÍRITOS • FLECHAS ✦</div>
+    <h1 class="title-main">BOW RAMPAGE</h1>
+    <div class="banner-subtext">ONDE QUALQUER CLASSE EMPUNHA UM ARCO PARA DISPARAR O IMPOSSÍVEL!</div>
+    <div class="banner-select">ESCOLHA SEU COMBATENTE</div>
+  </div>
+
+  <!-- 4 RETÂNGULOS VERTICAIS DE PÉ (METAL SLUG STYLE) -->
+  <div class="characters-roster">
+
+    <!-- 1. KNIGHT -->
+    <div class="hero-card card-knight" onclick="selectHero('Knight')">
+      <div class="card-top-tag">1P • TANK</div>
+      <div class="card-portrait-wrap">
+        <!-- Retrato sério original (sem arco) -->
+        <img class="hero-portrait" src="assets/characters/knight_idle.webp" alt="Knight" />
+      </div>
+      <div class="card-foot-panel">
+        <div class="hero-title">KNIGHT</div>
+        <div class="hero-role-badge">GUERREIRO DE AÇO</div>
+        <div class="click-prompt">PRESS START ▶</div>
+      </div>
+    </div>
+
+    <!-- 2. SORCERER -->
+    <div class="hero-card card-sorcerer" onclick="selectHero('Sorcerer')">
+      <div class="card-top-tag">2P • MAGE</div>
+      <div class="card-portrait-wrap">
+        <img class="hero-portrait" src="assets/characters/sorcerer_idle.webp" alt="Sorcerer" />
+      </div>
+      <div class="card-foot-panel">
+        <div class="hero-title">SORCERER</div>
+        <div class="hero-role-badge">MAGIA ARCANISTA</div>
+        <div class="click-prompt">PRESS START ▶</div>
+      </div>
+    </div>
+
+    <!-- 3. DRUID -->
+    <div class="hero-card card-druid" onclick="selectHero('Druid')">
+      <div class="card-top-tag">3P • NATURE</div>
+      <div class="card-portrait-wrap">
+        <img class="hero-portrait" src="assets/characters/druid_idle.webp" alt="Druid" />
+      </div>
+      <div class="card-foot-panel">
+        <div class="hero-title">DRUID</div>
+        <div class="hero-role-badge">GUARDIÃO XAMÃ</div>
+        <div class="click-prompt">PRESS START ▶</div>
+      </div>
+    </div>
+
+    <!-- 4. ARCHER -->
+    <div class="hero-card card-archer" onclick="selectHero('Archer')">
+      <div class="card-top-tag">4P • SCOUT</div>
+      <div class="card-portrait-wrap">
+        <img class="hero-portrait" src="assets/characters/archer_idle.webp" alt="Archer" />
+      </div>
+      <div class="card-foot-panel">
+        <div class="hero-title">ARCHER</div>
+        <div class="hero-role-badge">MESTRE CAÇADOR</div>
+        <div class="click-prompt">PRESS START ▶</div>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="camp-paths" aria-label="Caminhos do acampamento">
+    <button id="camp-to-merchant" hidden class="camp-path btn-shop-open" onclick="openShopModal()"><span class="camp-arrow" aria-hidden="true">‹</span><span><strong>TENDA DO GUSTAV</strong><small>Seguir pela trilha à esquerda</small></span></button>
+    <div class="camp-location"><span>ACAMPAMENTO</span><button type="button" id="camp-to-gardener" class="camp-path btn-shop-open" hidden><strong>JARDIM DOS TALENTOS</strong></button></div>
+    <button id="camp-to-witch" hidden class="camp-path btn-shop-open" onclick="openWitchShop()"><span><strong>GRIMÓRIO DA BRUXA</strong><small>Seguir pela trilha à direita</small></span><span class="camp-arrow" aria-hidden="true">›</span></button>
+  </nav>
+  <button type="button" class="camp-achievements" data-open-achievements>CONQUISTAS</button>
+  <footer class="creator-credits" aria-label="Créditos do criador">
+    <span class="creator-label">CRIADO POR</span>
+    <strong>Andy Chrono</strong>
+    <nav class="creator-socials" aria-label="Redes sociais de Andy Chrono">
+      <a class="creator-social creator-social-twitch" href="https://www.twitch.tv/andychrono" target="_blank" rel="noopener noreferrer" aria-label="Andy Chrono na Twitch, abre em nova aba" title="Twitch — @andychrono"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M11.571 4.714h1.715v5.143h-1.715zm4.715 0H18v5.143h-1.714zM6 0 1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg><span>Twitch</span></a>
+      <a class="creator-social creator-social-instagram" href="https://www.instagram.com/andychrono/" target="_blank" rel="noopener noreferrer" aria-label="Andy Chrono no Instagram, abre em nova aba" title="Instagram — @andychrono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span>Instagram</span></a>
+    </nav>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DE REVELAÇÃO DO PERSONAGEM (SEGUNDA TELA COM O ARCO)
+     ══════════════════════════════════════════════════════════════ -->
+<div id="reveal-screen">
+  <div class="reveal-box">
+
+    <div class="reveal-header">
+      <div class="reveal-headline">
+        <span>⚔️</span>
+        <span id="rev-badge-title">DETALHES DO HERÓI</span>
+      </div>
+      <button class="btn-back-roster" onclick="closeReveal()">✕ VOLTAR</button>
+    </div>
+
+    <div class="reveal-body">
+      <!-- 2ª Imagem: O Personagem com Arco em Ação -->
+      <div class="reveal-image-container">
+        <div class="secret-stamp">SEGREDOS DO COMBATENTE!</div>
+        <img id="rev-image" class="reveal-bow-image" src="" alt="Vocation Reveal"/>
+      </div>
+
+      <!-- Textos e Estatísticas -->
+      <div class="reveal-info-container">
+        <h2 id="rev-name" class="reveal-name">KNIGHT</h2>
+
+        <div class="reveal-shock-box">
+          <div class="shock-title" id="rev-weapon-title">🏹 ARMA SECRETA REVELADA!</div>
+          <div class="shock-desc" id="rev-desc">
+            Você achava que ele usava apenas espada? Aqui, todo combatente domina o arco!
+            O Cavaleiro empunha um arco colossal de aço e dispara espadas afiadas a toda velocidade!
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Poder de Ataque</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-atk" style="width: 85%;"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Cadência de Disparo</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-spd" style="width: 50%;"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Resistência / Armadura</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-def" style="width: 95%;"></div></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Alcance &amp; Precisão</div>
+            <div class="stat-bar-bg"><div class="stat-bar-fill" id="stat-rng" style="width: 65%;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal-foot">
+      <button class="btn-arcade" style="padding:10px 20px; font-size:9px;" onclick="closeReveal()">ESCOLHER OUTRO</button>
+      <button class="btn-lock-in" onclick="confirmStartGame()">ESCOLHER FASE</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL DA TENDA DO MERCADOR (GUSTAV & MOCHILA DO JOGADOR)
+     ══════════════════════════════════════════════════════════════ -->
+<div id="shop-modal">
+  <div class="shop-box">
+
+    <!-- Topo da Tenda -->
+    <div class="shop-header">
+      <div class="shop-title-wrap">
+        <div class="shop-title">🏪 TENDA DO MERCADOR ERRANTE</div>
+        <div class="shop-subtext">AVALIE E NEGOCIE SEUS DESPOJOS COLETADOS NA FLORESTA</div>
+      </div>
+      <div class="shop-header-actions">
+        <div class="shop-gold-pill">
+          <span>💰 OURO:</span>
+          <span id="shop-footer-gold" style="color:#fde047; font-weight:bold;">0</span>
+        </div>
+        <button class="btn-close-shop" onclick="closeShopModal()">✕ VOLTAR AO MENU</button>
+      </div>
+    </div>
+
+    <!-- Layout Principal em 2 Colunas -->
+    <div class="shop-main-layout">
+
+      <!-- ══ COLUNA ESQUERDA: GUSTAV MONUMENTAL ══ -->
+      <div class="shop-left-col">
+
+        <!-- Retrato grande do Gustav — ocupa todo o espaço disponível -->
+        <div class="seller-hero-frame" id="seller-hero-frame">
+          <img id="seller-portrait" class="seller-avatar-img"
+               src="assets/characters/gustav-neutral.webp" alt="Gustav, o Mercador" />
+          <div class="seller-tag-overlay">
+            <div class="seller-name-label">GUSTAV • O NEGOCIANTE</div>
+            <div class="seller-sub-label">Mercador de Raridades &amp; Relíquias</div>
+          </div>
+        </div>
+
+        <!-- Balão de fala estilo pergaminho — fixo na base da coluna esquerda -->
+        <div id="seller-dialogue" class="seller-speech-bubble">
+          <span class="speech-text">"Saudações, arqueiro! Abra sua mochila... Mostre-me o que você colheu na floresta e faremos um bom negócio!"</span>
+        </div>
+
+      </div>
+
+      <!-- ══ COLUNA DIREITA: MOCHILA + BALCÃO DE NEGOCIAÇÃO ══ -->
+      <div class="shop-right-col">
+
+        <!-- ZONA 1: Cabeçalho da Mochila (fixo) -->
+        <div class="backpack-header">
+          <div class="backpack-title">
+            <span>🎒 MOCHILA DO COMBATENTE</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            
+            <div class="backpack-capacity-pill">
+              <span id="bag-occupancy-val">0</span> / <span id="bag-total-val">12</span> SLOTS
+            </div>
+          </div>
+        </div>
+
+        <!-- ZONA 2: Grade da Mochila — 4×3 = 12 slots, sem scroll -->
+        <div class="backpack-grid-wrap">
+          <button id="backpack-open" class="backpack-closed" type="button" aria-label="Abrir a mochila" aria-expanded="false" aria-controls="backpack-interior"><img src="assets/props/backpack-closed.webp" alt="" draggable="false"><span>CLIQUE PARA ABRIR A MOCHILA</span></button>
+          <section id="backpack-interior" class="backpack-interior" aria-label="Interior da mochila" hidden>
+            <span class="backpack-interior-label">SEUS DESPOJOS DA JORNADA</span>
+            <div class="backpack-art-stage"><div class="backpack-open-art" aria-hidden="true"></div><div id="backpack-grid-container" class="backpack-grid"></div></div>
+            <button id="backpack-close" class="backpack-close" type="button">FECHAR MOCHILA</button>
+          </section>
+        </div>
+
+        <!-- ZONA 3: Balcão de Negociação — travado no fundo, sempre visível -->
+        <div class="trade-counter">
+          <div class="trade-counter-inner">
+            <div class="trade-counter-label">⚔️ BALCÃO DE NEGOCIAÇÃO</div>
+            <div id="item-inspect-panel">
+              <div class="trade-placeholder">
+                👆 Toque em um item na mochila acima para trazê-lo ao balcão do Gustav.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<div id="gardener-modal" hidden role="dialog" aria-modal="true" aria-labelledby="gardener-title">
+  <div class="shop-box witch-shop gardener-shop">
+    <header class="shop-header">
+      <div class="shop-title-wrap"><h2 id="gardener-title" class="shop-title">JARDIM DOS TALENTOS</h2><div class="shop-subtext">OFICINA BOTÂNICA</div></div>
+      <button type="button" class="btn-close-shop">VOLTAR AO ACAMPAMENTO</button>
+    </header>
+    <div class="shop-main-layout">
+      <aside class="shop-left-col">
+        <div class="seller-hero-frame"><img id="gardener-portrait" class="seller-avatar-img" src="assets/characters/gardener-neutral.webp" alt="O Jardineiro em sua oficina"><div class="seller-tag-overlay"><div class="seller-name-label">O JARDINEIRO</div><div class="seller-sub-label">Guardião da Árvore de Talentos</div></div></div>
+        <div class="seller-speech-bubble"><span id="gardener-dialogue" class="speech-text" aria-live="polite">Uma boa raiz faz toda a diferença, viajante.</span></div>
+      </aside>
+      <section class="gardener-content" aria-labelledby="talent-tree-title">
+        <h3 id="talent-tree-title">ÁRVORE DE TALENTOS</h3>
+        <div class="talent-vocations" role="group" aria-label="Vocação da árvore">
+          <button type="button" class="btn-close-shop" data-talent-vocation="Knight">Knight</button>
+          <button type="button" class="btn-close-shop" data-talent-vocation="Sorcerer">Sorcerer</button>
+          <button type="button" class="btn-close-shop" data-talent-vocation="Druid">Druid</button>
+          <button type="button" class="btn-close-shop" data-talent-vocation="Archer">Archer</button>
+        </div>
+        <div class="talent-bonsai">
+          <img id="talent-tree-art" src="assets/props/talent-tree-knight.webp" alt="Bonsai do Knight" width="1660" height="920">
+          <div id="talent-branches" hidden role="group" aria-label="Gemas de talento"></div>
+          <button type="button" id="talent-tree-open" class="btn-close-shop" aria-expanded="false" aria-controls="talent-branches">EXAMINAR BONSAI</button>
+        </div>
+        <p id="talent-gem-balance" aria-live="polite"></p>
+        <p id="talent-tree-detail" aria-live="polite"></p>
+        <button type="button" id="talent-inscribe" class="btn-close-shop" hidden></button>
+        <button type="button" id="gardener-talk" class="btn-close-shop">CONVERSAR</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="witch-modal" hidden role="dialog" aria-modal="true" aria-labelledby="witch-title">
+  <div class="shop-box witch-shop">
+    <header class="shop-header">
+      <div class="shop-title-wrap"><h2 id="witch-title" class="shop-title">✦ GRIMÓRIO DA BRUXA</h2><div class="shop-subtext">ENCANTAMENTOS, ENSINAMENTOS E SEGREDOS DA FLORESTA</div></div>
+      <div class="shop-header-actions"><div class="shop-gold-pill">💰 OURO: <span id="witch-gold">0</span></div><button id="witch-close" class="btn-close-shop" onclick="closeWitchShop()">✕ VOLTAR AO MENU</button></div>
+    </header>
+    <div class="shop-main-layout">
+      <aside class="shop-left-col">
+        <div class="seller-hero-frame"><img id="witch-portrait" class="seller-avatar-img" src="assets/characters/witch-neutral.webp" alt="A bruxa da floresta e seu caldeirão"><div class="seller-tag-overlay"><div class="seller-name-label">A BRUXA • MESTRA DAS RUNAS</div><div class="seller-sub-label">Pactos, runas &amp; segredos da floresta</div></div></div>
+        <div class="seller-speech-bubble"><span id="witch-dialogue" class="speech-text" aria-live="polite"></span></div>
+      </aside>
+      <section class="witch-content" data-station="buffs">
+        <nav class="witch-stations" role="tablist" aria-label="Ofícios da bruxa"><button id="station-grimoire" role="tab" type="button" aria-selected="true" aria-controls="witch-grimoire-panel" onclick="selectWitchStudy('buffs')">GRIMÓRIO</button><button id="station-cauldron" role="tab" type="button" aria-selected="false" aria-controls="witch-cauldron" onclick="selectWitchStudy('spells')">CALDEIRÃO</button><button hidden id="station-secrets" role="tab" type="button" aria-selected="false" aria-controls="witch-secrets" onclick="selectWitchStudy('secrets')">SEGREDOS</button></nav>
+        <nav id="witch-chapters" class="witch-chapters" aria-label="Capítulos por vocação"></nav>
+        <div id="witch-grimoire-panel" class="witch-book-wrap" data-book-state="closed" role="tabpanel" aria-labelledby="station-grimoire"><button id="grimoire-open" class="grimoire-cover" type="button" aria-label="Abrir o grimório da bruxa"><img class="grimoire-cover-art" src="assets/props/grimoire-closed.webp" alt="" draggable="false" decoding="async"></button><div class="witch-book"><button id="witch-page-previous" class="book-page-arrow book-page-previous" type="button" onclick="turnWitchPage(-1)" aria-label="Páginas anteriores"><svg viewBox="0 0 16 28" aria-hidden="true"><path d="M12 3 3 14l9 11"/></svg></button><button id="witch-page-next" class="book-page-arrow book-page-next" type="button" onclick="turnWitchPage(1)" aria-label="Próximas páginas"><svg viewBox="0 0 16 28" aria-hidden="true"><path d="m4 3 9 11-9 11"/></svg></button>
+          <section class="grimoire-page grimoire-index"><div class="page-heading"><span id="witch-chapter-type" class="ink-eyebrow">GRIMÓRIO DAS VOCAÇÕES</span><h3 id="witch-chapter-name"></h3><p id="witch-chapter-motto"></p></div><div id="witch-catalog" aria-label="Inscrições do capítulo"></div><div class="page-number" id="witch-page-left"></div></section>
+          <div class="book-binding" aria-hidden="true"></div>
+          <section class="grimoire-page grimoire-lesson"><section id="witch-detail" aria-label="Página do encantamento"></section><div class="page-number" id="witch-page-right"></div></section>
+        </div></div>
+        <section id="witch-secrets" hidden></section>
+        <section id="witch-cauldron" class="cauldron-workshop" hidden role="tabpanel" aria-labelledby="station-cauldron"></section>
+        <section id="witch-action" class="witch-action" aria-label="Confirmação do encantamento" hidden></section>
+        <footer class="witch-footer"><span id="witch-chapter-counter"></span><span class="witch-progress"><b id="witch-total">0</b> <span id="witch-progress-label">runas inscritas</span></span><button id="grimoire-finish-writing" hidden type="button">CONCLUIR ESCRITA</button></footer>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="js/i18n-data.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/demo-content.js"></script><script src="js/environment.js"></script><script src="js/inventory.js"></script>
+<script src="js/discovery.js"></script>
+<script src="js/powerups.js"></script>
+<script src="js/spell-teachings.js"></script>
+<script src="js/grimoire-motion.js"></script>
+<script src="js/witch-shop.js"></script>
+<script src="js/economy.js"></script><script src="js/talents.js"></script><script src="js/archer-spells.js"></script><script src="js/vocation-spells.js"></script>
+<script src="js/cauldron-ritual.js"></script>
+
+<script src="js/audio-bank.js"></script>
+<script src="js/audio.js"></script>
+<script>
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+//  DADOS COMPLETOS DAS 4 VOCAÇÕES (COM AS IMAGENS ATUALIZADAS)
+// ══════════════════════════════════════════════════════════════
+const HERO_DATA = {
+  Knight: {
+    name: 'KNIGHT ARQUEIRO',
+    role: 'Guerreiro de Aço',
+    bowImage: 'assets/characters/knight_archer.webp',
+    weaponTitle: '🏹 ARCO DE AÇO • FLECHAS DE ESPADA',
+    description: 'Um cavaleiro com armadura impenetrável que se recusa a lutar corpo a corpo! Ele equipa um arco monumental e dispara espadas forjadas em brasa com impacto destruidor de muralhas.',
+    atk: '90%',
+    spd: '50%',
+    def: '95%',
+    rng: '65%'
+  },
+  Sorcerer: {
+    name: 'SORCERER ARQUEIRO',
+    role: 'Mago das Chamas Arcanas',
+    bowImage: 'assets/characters/sorcerer_archer.webp',
+    weaponTitle: '🪄 ARCO CÓSMICO • DISPARO DE VARINHAS',
+    description: 'Quem precisa de cajado quando se tem um arco arcano? O Mago canaliza energia estelar na corda de seu arco místico para atirar varinhas explosivas que ricocheteiam em cadeia.',
+    atk: '85%',
+    spd: '70%',
+    def: '45%',
+    rng: '80%'
+  },
+  Druid: {
+    name: 'DRUID ARQUEIRO',
+    role: 'Guardião da Vida Selvagem',
+    bowImage: 'assets/characters/druid_archer.webp',
+    weaponTitle: '🐦 ARCO DE CARVALHO • ENXAME DE PÁSSAROS',
+    description: 'Em harmonia com a floresta ancestral, o Druida usa um galho vivo retorcido como arco. Na corda, ele lança pássaros e espíritos naturais que caçam os inimigos pelo campo.',
+    atk: '70%',
+    spd: '80%',
+    def: '60%',
+    rng: '75%'
+  },
+  Archer: {
+    name: 'ARCHER LENDÁRIO',
+    role: 'O Mestre Supremo do Arco',
+    bowImage: 'assets/characters/archer_classic.webp',
+    weaponTitle: '🏹 ARCO LONGO • FLECHAS PERFURANTES',
+    description: 'O mestre do arco! Um caçador que combina agilidade e precisão para lançar uma sequência de flechas certeiras contra seus inimigos.',
+    atk: '80%',
+    spd: '95%',
+    def: '50%',
+    rng: '95%'
+  }
+};
+
+let currentSelectedVocation = 'Knight';
+
+function selectHero(vocationKey) {
+  currentSelectedVocation = vocationKey;
+  const data = HERO_DATA[vocationKey];
+  if (!data) return;
+
+  // Som de seleção
+  playUISelect();
+
+  // Preencher Modal
+  document.getElementById('rev-badge-title').textContent = `1P SELECIONADO: ${vocationKey.toUpperCase()}`;
+  document.getElementById('rev-name').textContent = data.name;
+  document.getElementById('rev-image').src = data.bowImage;
+  document.getElementById('rev-weapon-title').textContent = data.weaponTitle;
+  document.getElementById('rev-desc').textContent = data.description;
+
+  document.getElementById('stat-atk').style.width = data.atk;
+  document.getElementById('stat-spd').style.width = data.spd;
+  document.getElementById('stat-def').style.width = data.def;
+  document.getElementById('stat-rng').style.width = data.rng;
+
+  // Abrir Modal
+  document.getElementById('reveal-screen').classList.add('show');
+}
+
+function closeReveal() {
+  playUIBack();
+  document.getElementById('reveal-screen').classList.remove('show');
+}
+
+function confirmStartGame() {
+  playUIConfirm();
+  // Salvar vocação selecionada para carregar no game.html
+  localStorage.setItem('bbl_demo_online_v1_vocation', currentSelectedVocation);
+  setTimeout(() => { window.location.href = 'game.html'; }, 200);
+}
+
+// Bloquear zoom acidental do navegador com Ctrl + Scroll e atalhos de teclado
+window.addEventListener('wheel', e => {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
+
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (
+    e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0' ||
+    e.keyCode === 187 || e.keyCode === 189 || e.keyCode === 107 || e.keyCode === 109 || e.keyCode === 96 || e.keyCode === 48
+  )) {
+    e.preventDefault();
+  }
+  if (e.key === 'Escape') {
+    closeReveal();
+    closeShopModal();
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+//  SISTEMA DA TENDA DO MERCADOR (ECONOMIA, VENDAS & UPGRADES)
+// ══════════════════════════════════════════════════════════════
+const ITEM_DB = {
+  // Orbes de Slimes
+  slime_green_orb:  { name: 'Orbe Verde',       src: 'assets/items/green-slime-essence.webp',  price: BowEconomy.ORB_PRICES.slime_green_orb,   rarity: 'Comum',     color: '#4ade80' },
+  slime_blue_orb:   { name: 'Orbe Azul',        src: 'assets/items/blue-slime-essence.webp',   price: BowEconomy.ORB_PRICES.slime_blue_orb,  rarity: 'Incomum',   color: '#38bdf8' },
+  slime_red_orb:    { name: 'Orbe Vermelho',    src: 'assets/items/red-slime-essence.webp',    price: BowEconomy.ORB_PRICES.slime_red_orb,  rarity: 'Raro',      color: '#f87171' },
+  slime_purple_orb: { name: 'Orbe Roxo',        src: 'assets/items/purple-slime-essence.webp', price: BowEconomy.ORB_PRICES.slime_purple_orb,  rarity: 'Místico',   color: '#c084fc' },
+  slime_gray_orb:   { name: 'Orbe Cinzento',    src: 'assets/items/gray-slime-essence.webp',   price: BowEconomy.ORB_PRICES.slime_gray_orb,  rarity: 'Ancestral', color: '#94a3b8' },
+  slime_king_orb:   { name: 'Orbe do Rei Slime', src: 'assets/items/king-slime-orb.webp',  price: 150, rarity: 'Lendário',  color: '#facc15' },
+};
+
+Object.assign(ITEM_DB,ExpansionContent.ITEMS);
+for(const [id,item] of Object.entries(ITEM_DB))item.name=BowI18n.t('item.'+id+'.name',item.name);
+const UPGRADE_DB = BowPowerups.CATALOG;
+
+// ══════════════════════════════════════════════════════════════
+//  SISTEMA DE ÁUDIO — gravações e volumes compartilhados
+// ══════════════════════════════════════════════════════════════
+function playSound(event, volume = 1) { BowAudio.play(event, {volume}); }
+function playShopCoinSound() { BowAudio.play('coin'); }
+function playShopBuySound() { BowAudio.play('upgrade'); }
+function playShopErrorSound() { BowAudio.play('puzzle_error'); }
+function playShopOpenSound() { BowAudio.play('bag'); }
+function playShopCloseSound() { BowAudio.play('ui_back'); }
+function playUIClick() { BowAudio.play('ui_click'); }
+function playUISelect() { BowAudio.play('ui_select'); }
+function playUIBack() { BowAudio.play('ui_back'); }
+function playUIConfirm() { BowAudio.play('ui_confirm'); }
+function playItemDrop() { BowAudio.play('bag'); }
+function playItemPickup() { BowAudio.play('coin'); }
+function playArrowShoot() { BowAudio.play('shot_archer'); }
+function playArrowHit() { BowAudio.play('hit'); }
+function playSlimeDie() { BowAudio.play('death'); }
+function playSlimeHit() { BowAudio.play('hit'); }
+
+function loadSaveData() {
+  try {
+    const raw = localStorage.getItem('bbl_demo_online_v1_save_v1');
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (typeof data.gold === 'number' && data.inventory && data.upgrades) {
+        return data;
+      }
+    }
+  } catch(e) {}
+
+  // Um jogador novo começa sem ouro, itens ou melhorias.
+  const initial = {gold:0,inventory:{},upgrades:{}};
+  saveGameData(initial);
+  return initial;
+}
+
+function saveGameData(data) {
+  try {
+    localStorage.setItem('bbl_demo_online_v1_save_v1', JSON.stringify(data));
+    window.dispatchEvent(new Event('bow-progress-changed'));
+    return true;
+  } catch(e) { return false; }
+}
+
+let selectedItemKey = null;
+const BAG_TOTAL_SLOTS = 12;
+let sellerMoodTimeout = null;
+
+function setSellerMood(isHappy, dialogueText) {
+  const portrait = document.getElementById('seller-portrait');
+  const speech = document.getElementById('seller-dialogue');
+  const frame = document.getElementById('seller-hero-frame');
+  if (portrait) {
+    portrait.src = isHappy ? 'assets/characters/gustav-happy.webp' : 'assets/characters/gustav-neutral.webp';
+    portrait.style.filter = isHappy ? 'brightness(1.15) drop-shadow(0 0 18px rgba(245,200,66,0.6))' : '';
+  }
+  if (frame) {
+    if (isHappy) {
+      frame.classList.add('seller-happy');
+    } else {
+      frame.classList.remove('seller-happy');
+    }
+  }
+  if (speech && dialogueText) {
+    const span = speech.querySelector('.speech-text');
+    if (span) span.textContent = `"${dialogueText}"`;
+    else speech.textContent = `"${dialogueText}"`;
+  }
+  if (sellerMoodTimeout) clearTimeout(sellerMoodTimeout);
+  if (isHappy) {
+    sellerMoodTimeout = setTimeout(() => {
+      if (portrait) {
+        portrait.src = 'assets/characters/gustav-neutral.webp';
+        portrait.style.filter = '';
+      }
+      if (frame) frame.classList.remove('seller-happy');
+    }, 2400);
+  }
+}
+
+function updateGoldDisplays() {
+  const data = loadSaveData();
+  const menuGold = document.getElementById('menu-gold-display');
+  const shopGold = document.getElementById('shop-footer-gold');
+  if (menuGold) menuGold.textContent = data.gold;
+  if (shopGold) shopGold.textContent = data.gold;
+}
+
+function refreshCampEconomy() {
+  updateGoldDisplays();
+  if (document.getElementById('shop-modal').style.display==='flex') {
+    renderBackpack();
+    renderInspectPanel();
+  }
+  if (!document.getElementById('witch-modal').hidden) renderWitchShop();
+}
+window.addEventListener('pageshow',event=>{if(event.persisted)refreshCampEconomy();});
+window.addEventListener('storage',event=>{
+  if(event.storageArea===localStorage&&event.key===GameMode.saveKey)refreshCampEconomy();
+});
+
+function openShopModal() {
+  window.GustavForge?.station('bag');
+  const modal = document.getElementById('shop-modal');
+  if (modal) modal.style.display = 'flex';
+
+  try {
+    playShopOpenSound();
+    updateGoldDisplays();
+    selectedItemKey = null;
+    window.BackpackUI?.reset();
+    renderBackpack();
+    renderInspectPanel();
+    setSellerMood(false, 'Saudações, arqueiro! Abra sua mochila... Mostre-me o que você colheu na floresta e faremos um bom negócio!');
+  } catch(err) {
+    console.error('Erro ao inicializar tenda:', err);
+  }
+}
+
+function closeShopModal() {
+  window.GustavForge?.cancel();
+  window.BackpackUI?.reset();
+  const modal = document.getElementById('shop-modal');
+  if (modal) modal.style.display = 'none';
+  playShopCloseSound();
+}
+
+function renderBackpack() {
+  const data = loadSaveData();
+  const gridEl = document.getElementById('backpack-grid-container');
+  const occEl = document.getElementById('bag-occupancy-val');
+  if (!gridEl) return;
+
+  const inv = data.inventory || {};
+  const activeKeys = Object.keys(inv).filter(k => inv[k] > 0 && ITEM_DB[k]);
+
+  if (occEl) occEl.textContent = activeKeys.length;
+
+  let html = '';
+  // Preencher os 12 slots da mochila
+  for (let i = 0; i < BAG_TOTAL_SLOTS; i++) {
+    if (i < activeKeys.length) {
+      const key = activeKeys[i];
+      const item = ITEM_DB[key];
+      if (!item) continue;
+      const count = inv[key];
+      const isSelected = selectedItemKey === key;
+      html += `
+        <button type="button" class="backpack-slot ${isSelected ? 'selected' : ''}" onclick="selectBagSlot('${key}')" aria-pressed="${isSelected}" aria-label="${item.name}, ${count} unidades" title="${item.name} (${item.rarity})">
+          <img src="${item.src}" alt="${item.name}" class="slot-icon" />
+          <span class="slot-count">x${count}</span>
+        </button>
+      `;
+    } else {
+      html += `
+        <div class="backpack-slot empty">
+          <span style="font-size:7px; color:#1e293b;">•</span>
+        </div>
+      `;
+    }
+  }
+
+  gridEl.innerHTML = html;
+}
+
+function selectBagSlot(key) {
+  selectedItemKey = key;
+  playUISelect();
+  renderBackpack();
+  renderInspectPanel();
+  const item = ITEM_DB[key];
+  if (item) {
+    const lines = [
+      `Hum... Vejo que trouxe ${item.name}! Tenho muito interesse nisso.`,
+      `${item.name}, de raridade ${item.rarity}! Uma relíquia e tanto da floresta.`,
+      `Excelente colheita! Quanto quer por esse ${item.name}?`
+    ];
+    setSellerMood(false, lines[Math.floor(Math.random() * lines.length)]);
+  }
+}
+
+function renderInspectPanel() {
+  const panel = document.getElementById('item-inspect-panel');
+  if (!panel) return;
+
+  const data = loadSaveData();
+  const inv = data.inventory || {};
+
+  if (!selectedItemKey || !inv[selectedItemKey] || inv[selectedItemKey] <= 0) {
+    panel.innerHTML = `
+      <div class="trade-placeholder">
+        👆 Toque em um item na mochila acima para trazê-lo ao balcão do Gustav.
+      </div>
+    `;
+    return;
+  }
+
+  const item = ITEM_DB[selectedItemKey];
+  const count = inv[selectedItemKey];
+  if(item.price===null){panel.innerHTML=`<div class="inspect-info"><div class="inspect-name">${item.name}</div><div class="inspect-rarity">${count} un. · Material da Arena Egípcia</div><p>Valor de venda e receitas ainda não definidos.</p></div>`;return;}
+  const totalValue = count * item.price;
+
+  panel.innerHTML = `
+    <div class="inspect-header">
+      <div class="inspect-large-icon" style="border-color:${item.color}; box-shadow: 0 0 10px ${item.color}40;">
+        <img src="${item.src}" alt="${item.name}" />
+      </div>
+      <div class="inspect-info">
+        <div class="inspect-name">${item.name}</div>
+        <div class="inspect-rarity" style="color:${item.color};">${item.rarity} • <b style="color:#fff;">${count} un. na mochila</b></div>
+        <div class="inspect-desc">Item coletado na floresta. Negocie por ouro agora ou guarde para usos futuros.</div>
+      </div>
+    </div>
+    <div class="inspect-offer-row">
+      <span class="inspect-offer-text">⚖️ AVALIAÇÃO DO MERCADOR:</span>
+      <span class="inspect-offer-val">💰 ${item.price} OURO / un.</span>
+    </div>
+    <div class="inspect-actions">
+      <button class="btn-offer-deal" onclick="sellItem('${selectedItemKey}', 1)">
+        🤝 VENDER 1 &nbsp;(+${item.price} Ouro)
+      </button>
+      <button class="btn-offer-deal btn-sell-all" onclick="sellItem('${selectedItemKey}', ${count})">
+        💰 VENDER TUDO &nbsp;(+${totalValue} Ouro)
+      </button>
+    </div>
+  `;
+}
+
+function sellItem(itemKey, countToSell) {
+  const data = loadSaveData();
+  const item = ITEM_DB[itemKey];
+  if (item?.price===null) return;
+  if (!data.inventory[itemKey] || data.inventory[itemKey] < countToSell || !item) return;
+
+  data.inventory[itemKey] -= countToSell;
+  if (data.inventory[itemKey] <= 0) {
+    delete data.inventory[itemKey];
+    if (selectedItemKey === itemKey) selectedItemKey = null;
+  }
+
+  const gainedGold = countToSell * item.price;
+  data.gold += gainedGold;
+  if (!saveGameData(data)) {
+    playShopErrorSound();
+    setSellerMood(false, 'Não consegui guardar a venda. Tente novamente.');
+    return;
+  }
+
+  playShopCoinSound();
+  setTimeout(() => playShopBuySound(), 200);
+  updateGoldDisplays();
+  renderBackpack();
+  renderInspectPanel();
+
+  const happyLines = [
+    `Excelente negócio! Ouro na mão: +${gainedGold} moedas!`,
+    `Muito obrigado! Esses materiais valem fortunas na capital! (+${gainedGold} ouro)`,
+    `Fechado! Gustav não recusa um bom item da floresta! (+${gainedGold} ouro)`
+  ];
+  setSellerMood(true, happyLines[Math.floor(Math.random() * happyLines.length)]);
+}
+
+function buyUpgrade(upgId) {
+  return buyWitchUpgrade(upgId);
+}
+
+// Inicializar contadores de ouro no carregamento
+updateGoldDisplays();
+
+// Partículas Mágicas e Vagalumes Flutuando no Fundo da Floresta
+(function() {
+  const pCanvas = document.getElementById('bg-particles');
+  if (!pCanvas) return;
+  const pCtx = pCanvas.getContext('2d');
+  let pWidth, pHeight;
+
+  function resizeParticles() {
+    pWidth = pCanvas.width = window.innerWidth;
+    pHeight = pCanvas.height = window.innerHeight;
+  }
+  resizeParticles();
+  window.addEventListener('resize', resizeParticles);
+
+  const ambientParticles = [];
+  const P_COUNT = 36;
+  const colors = ['#f5c842', '#86efac', '#38bdf8', '#fde047', '#4ade80'];
+
+  for (let i = 0; i < P_COUNT; i++) {
+    ambientParticles.push({
+      x: Math.random() * (pWidth || 1000),
+      y: Math.random() * (pHeight || 800),
+      vx: (Math.random() - 0.5) * 16,
+      vy: -12 - Math.random() * 22,
+      size: 1.5 + Math.random() * 2.5,
+      alpha: 0.25 + Math.random() * 0.65,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      pulse: Math.random() * Math.PI * 2
+    });
+  }
+
+  function loopParticles() {
+    pCtx.clearRect(0, 0, pWidth, pHeight);
+    for (const pt of ambientParticles) {
+      pt.x += pt.vx * 0.016;
+      pt.y += pt.vy * 0.016;
+      pt.pulse += 0.03;
+
+      if (pt.y < -10) {
+        pt.y = pHeight + 10;
+        pt.x = Math.random() * pWidth;
+      }
+      if (pt.x < -10) pt.x = pWidth + 10;
+      if (pt.x > pWidth + 10) pt.x = -10;
+
+      const currentAlpha = Math.max(0.12, pt.alpha * (0.6 + Math.sin(pt.pulse) * 0.4));
+      pCtx.save();
+      pCtx.globalAlpha = currentAlpha;
+      pCtx.fillStyle = pt.color;
+      pCtx.shadowColor = pt.color;
+      pCtx.shadowBlur = 9;
+      pCtx.beginPath();
+      pCtx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+      pCtx.fill();
+      pCtx.restore();
+    }
+    requestAnimationFrame(loopParticles);
+  }
+  requestAnimationFrame(loopParticles);
+})();
+</script>
+<script src="js/backpack.js"></script><script src="js/forge.js"></script>
+<script src="js/achievements.js"></script>
+<script src="js/talent-garden.js"></script>
+<script src="js/camp-navigation.js"></script>
+<script src="js/npc-portraits.js"></script>
+<section id="stage-modal" hidden role="dialog" aria-modal="true" aria-labelledby="stage-title">
+  <div class="stage-selection">
+    <header class="stage-heading"><button id="stage-back" type="button">VOLTAR</button><span>A PRÓXIMA JORNADA</span><h1 id="stage-title">ESCOLHA SEU DESTINO</h1></header>
+    <div id="stage-options" role="group" aria-label="Fases"></div>
+    <div id="stage-details" class="stage-layout" hidden>
+      <figure class="stage-preview"><img id="stage-preview-art" alt=""><figcaption><span id="stage-region"></span><h2 id="stage-preview-title"></h2></figcaption></figure>
+      <div class="stage-choices">
+        <fieldset id="stage-modes" class="stage-modes"><legend>MODO DA JORNADA</legend><div id="stage-mode-options"></div><p id="stage-mode-info" aria-live="polite"></p></fieldset>
+        <footer class="stage-footer"><button id="stage-continue" type="button">JOGAR</button><p id="stage-note" role="status"></p></footer>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="pact-modal" hidden role="dialog" aria-modal="true" aria-labelledby="pact-title"><section class="pact-box"><header class="pact-header"><div><h2 id="pact-title">ESCOLHA SEU PACTO</h2><p><span id="pact-vocation"></span> • ESCOLHA DA JORNADA</p></div><button id="pact-back" class="btn-close-shop">✕ VOLTAR</button></header><div class="pact-skip-row"><button id="pact-skip" class="btn-close-shop" type="button" hidden>JOGAR SEM PACTO</button></div><div id="pact-options"></div><p id="pact-note"></p><p id="pact-raid-best" class="pact-raid-best" hidden></p></section></div>
+<script src="js/arena-transition.js"></script><script src="js/run-pacts.js"></script><script src="js/stages.js"></script><script src="js/journey-modes.js"></script><script src="js/stage-selection.js"></script><script src="js/pact-raids.js"></script><script src="js/vocation-pacts.js"></script><script src="js/pact-selection.js"></script>
+
+<script src="js/start-screen.js"></script>
+<div class="demo-label">BOW RAMPAGE · DEMO DE TESTE</div></body>
+</html>

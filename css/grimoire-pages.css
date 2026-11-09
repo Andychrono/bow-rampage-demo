@@ -1,0 +1,84 @@
+/* Cada folha mostra um encantamento; navegação vira as folhas do livro. */
+.witch-chapters[hidden]{display:none!important}
+#witch-modal[data-study=buffs]:has(.grimoire-cover:not([hidden])) :is(.witch-chapters,.witch-action[hidden]){display:none}
+#witch-modal[data-study=buffs]:has([data-book-state=opening] .grimoire-cover[hidden]) .witch-chapters{visibility:hidden}
+.grimoire-cover-art{transform:translateX(-2.5%)}
+.witch-content:is([data-station=spells],[data-station=buffs]) .witch-chapters{grid-template-columns:repeat(4,minmax(0,1fr))}
+.witch-book[data-layout=folio] .page-heading{display:none}
+.witch-book[data-layout=folio] .grimoire-page{overflow:hidden;padding:7px 3px 18px;min-height:0}
+.witch-book[data-layout=folio] #witch-catalog,.witch-book[data-layout=folio] #witch-detail{flex:1 1 0;min-height:0;display:flex;justify-content:stretch}
+#witch-modal .folio-card{font-family:Georgia,'Times New Roman',serif;width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;padding:5px 5px 8px;background:transparent;border:1px solid transparent;border-radius:3px;color:#513421;cursor:pointer;text-align:center;gap:5px}
+#witch-modal .folio-card.selected{border-color:#94603966;background:linear-gradient(#ffffff04,#936a2e0b)}
+#witch-modal .folio-card:focus-visible{outline:1px solid #805331;outline-offset:1px}
+.folio-eyebrow{font-size:9px;letter-spacing:.6px;line-height:1.3;flex-shrink:0}
+.folio-card h3,.folio-end h3{font:normal 18px/1.15 Georgia,serif;margin:0;flex-shrink:0;color:#5a3021;overflow-wrap:break-word}
+.folio-emblem{width:36px;height:36px;color:#805b34;flex:0 0 36px;margin:1px 0}
+.folio-description{font:13px/1.35 Georgia,serif;margin:0;flex:1 0 auto;text-align:center}
+.folio-level{display:flex;flex-direction:column;align-items:center;gap:5px;margin:2px 0;font-size:10px;flex-shrink:0}
+.folio-ranks{display:flex;gap:4px}.folio-ranks i{width:4px;height:9px;background:#75523522;transform:rotate(15deg)}.folio-ranks i.filled{background:#863a2b}
+.folio-effects{display:grid;grid-template-columns:1fr;gap:5px;width:100%;border-top:1px solid #956d4144;padding-top:6px;flex-shrink:0}
+.folio-effects>div{display:flex;flex-direction:column;gap:2px}.folio-effects small{font-size:9px;line-height:1.2;color:#87613d;letter-spacing:.3px}.folio-effects strong{font-size:12px;line-height:1.2;color:#69412a;font-weight:normal}
+.folio-effects>div:last-child strong{color:#803a2a}
+.folio-end{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:center;text-align:center;gap:15px;color:#735335;font:13px/1.5 Georgia,serif;padding:10px}
+.folio-end h3{font-size:18px}.folio-end p{margin:0}
+.folio-flourish{display:block;flex:0 0 1px;height:1px;width:75%;margin:10px auto;background:linear-gradient(90deg,transparent,#9b713f,transparent)}
+.folio-secret-state{font-size:10px;line-height:1.5;color:#7a412e;border-top:1px solid #956d4155;padding-top:8px;margin-top:auto;flex-shrink:0}
+.secret-page .folio-description{flex:0 0 auto}.secret-page h3{margin-top:8px}
+#witch-modal .witch-footer button:disabled{opacity:.3;cursor:default}
+#witch-modal .witch-stations button{min-width:0}
+@media(max-width:760px){
+ .folio-card h3{font-size:16px}.folio-description{font-size:12px;line-height:1.3}.folio-emblem{width:30px;height:30px;flex-basis:30px}.folio-eyebrow{font-size:8px}.folio-effects strong{font-size:11px}.folio-level{font-size:9px}.folio-effects small{font-size:8px}
+ #witch-modal .folio-card{padding:3px;gap:4px}.folio-ranks{gap:3px}.folio-ranks i{width:3px;height:7px}
+}
+@media(max-width:480px){
+ #witch-modal[data-study=buffs] .witch-content,#witch-modal[data-study=secrets] .witch-content{overflow:hidden}
+ #witch-modal[data-study=buffs] .witch-book-wrap,#witch-modal[data-study=secrets] .witch-book-wrap{min-height:0;flex:1 1 0}
+ #witch-modal[data-study=buffs] .shop-main-layout,#witch-modal[data-study=secrets] .shop-main-layout{grid-template-rows:75px minmax(0,1fr)}
+ #witch-modal[data-study=buffs] .shop-left-col .seller-hero-frame,#witch-modal[data-study=secrets] .shop-left-col .seller-hero-frame{height:75px;flex-basis:75px}
+ #witch-modal .witch-book[data-layout=folio]{padding:8% 10% 17%;gap:6%}
+ .folio-card h3{font-size:15px}.folio-description{font-size:11px;line-height:1.3}.folio-eyebrow{font-size:7px;letter-spacing:0}.folio-emblem{width:27px;height:27px;flex-basis:27px}.folio-effects{gap:4px;padding-top:4px}.folio-effects strong{font-size:10px}.folio-level{font-size:8px}.folio-secret-state{font-size:9px}
+ .folio-end{padding:2px;font-size:12px}.folio-end h3{font-size:15px}
+ #witch-modal .witch-footer{gap:5px;padding:8px 6px}.witch-footer .witch-progress{font-size:5px}
+}
+@media(max-width:480px) and (max-height:720px){
+ #witch-modal[data-study=buffs] .witch-action,#witch-modal[data-study=secrets] .witch-action{flex-basis:90px;height:90px;min-height:90px}
+ .folio-description{font-size:10px;line-height:1.25}.folio-card h3{font-size:13px}.folio-emblem{width:22px;height:22px;flex-basis:22px}.folio-card .folio-effects strong{font-size:9px}
+}
+
+.witch-book[data-layout=folio] .page-number{position:absolute;bottom:1px;left:0;right:0;margin:0;padding:0;font-size:10px;line-height:1.1}
+.witch-book[data-layout=folio] .grimoire-page{padding-top:3px;padding-bottom:14px}
+#witch-modal .folio-card{gap:3px;padding:4px 4px 6px}
+.folio-level{flex-direction:row;justify-content:center;gap:8px}
+.folio-effects{grid-template-columns:1fr 1fr;gap:4px}
+.folio-emblem{width:28px;height:28px;flex-basis:28px}
+@media(max-width:480px){.folio-level{flex-direction:column;gap:3px}.folio-emblem{width:24px;height:24px;flex-basis:24px}.folio-effects strong{font-size:11px}}
+@media(max-width:480px) and (max-height:720px){.folio-emblem{width:20px;height:20px;flex-basis:20px}.folio-level{flex-direction:row;gap:4px}.folio-effects strong{font-size:10px}}
+
+.witch-book[data-layout=folio] .grimoire-page{padding-top:10px;padding-bottom:20px}
+.witch-book[data-layout=folio] .page-number{bottom:3px}
+
+/* A arte do livro fica livre de molduras e a navegação acompanha suas bordas. */
+#witch-modal .folio-card.selected{border-color:transparent;background:none}
+#witch-modal .folio-card:focus-visible{outline:none}
+#witch-modal .folio-card.selected h3,#witch-modal .folio-card:focus-visible h3{text-decoration:underline;text-decoration-color:#8c593b88;text-underline-offset:4px;text-decoration-thickness:1px}
+#witch-modal .grimoire-cover:focus-visible{outline:none}
+#witch-modal .book-page-arrow{position:absolute;top:44%;transform:translateY(-50%);width:38px;height:60px;padding:7px;border:0;border-radius:0;background:transparent;color:#ffe2a0;opacity:.95;filter:drop-shadow(0 2px 2px #000) drop-shadow(0 0 3px #b9873c66);z-index:4;cursor:pointer;box-shadow:none;transition:opacity 160ms ease,filter 160ms ease}
+#witch-modal .book-page-previous{left:1%}
+#witch-modal .book-page-next{right:1%}
+.book-page-arrow svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#witch-modal .book-page-arrow:hover,#witch-modal .book-page-arrow:focus-visible{opacity:1;outline:none;filter:drop-shadow(0 2px 2px #000) drop-shadow(0 0 6px #f0ce89aa)}
+#witch-modal .book-page-arrow:disabled{visibility:hidden;pointer-events:none}
+#witch-modal .book-page-arrow[hidden]{display:none}
+.pact-art-page{height:100%;width:100%;min-height:0;display:flex;align-items:center;justify-content:center}
+.pact-art-page img{display:block;max-width:100%;max-height:100%;width:auto;height:100%;object-fit:contain;filter:drop-shadow(1px 3px 3px #40241166)}
+@media(max-width:480px){#witch-modal .book-page-arrow{width:32px;height:52px;padding:6px;color:#ffe2a0;opacity:.95}}
+@media(prefers-reduced-motion:reduce){#witch-modal .book-page-arrow{transition:none}}
+
+/* A capa reage pela própria arte, sem a caixa de foco/hover do botão. */
+#witch-modal .grimoire-cover,#witch-modal .grimoire-cover:hover,#witch-modal .grimoire-cover:focus,#witch-modal .grimoire-cover:focus-visible{outline:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important}
+#witch-modal .grimoire-cover:focus-visible .grimoire-cover-art{filter:brightness(1.12)}
+.secret-pact-stage[hidden]{display:none!important}
+.secret-pact-stage{position:relative;flex:1;min-height:0;background:radial-gradient(ellipse at center,#68442f20,transparent 70%),#0a0e18;overflow:hidden}
+.secret-pact-stage>img{position:absolute;inset:18px;width:calc(100% - 36px);height:calc(100% - 36px);object-fit:contain;filter:drop-shadow(0 7px 13px #0009)}
+.witch-content[data-station=secrets] .witch-footer{display:none}
+@media(max-width:480px){.secret-pact-stage>img{inset:12px;width:calc(100% - 24px);height:calc(100% - 24px)}}
